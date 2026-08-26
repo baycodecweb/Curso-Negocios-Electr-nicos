@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grafiluz — Demo Puente Digital (Sesión 2)</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      max-width: 720px;
+      margin: 40px auto;
+      padding: 0 20px;
+      color: #222;
+      background: #fafafa;
+    }
+    h1 { font-size: 1.4rem; }
+    p.explicacion { color: #555; line-height: 1.5; }
+    button {
+      background: #1d4ed8;
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+    button:hover { background: #1e40af; }
+    #pd-estado {
+      margin: 14px 0;
+      font-style: italic;
+      color: #444;
+    }
+    #pd-catalogo {
+      display: grid;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .pd-producto {
+      background: white;
+      border: 1px solid #e5e5e5;
+      border-radius: 8px;
+      padding: 12px 16px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Demo: El Puente Digital — Grafiluz</h1>
+  <p class="explicacion">
+    Este catálogo maneja precios referenciales en Soles (PEN). Al presionar el botón,
+    el script se conecta a una <strong>API externa de tipo de cambio</strong> (open.er-api.com)
+    y muestra los precios convertidos a USD y EUR en tiempo real. Esto es
+    <strong>E-Business</strong>: una integración que hace más inteligente al negocio,
+    y no una transacción de compra/venta (eso sería E-Commerce).
+  </p>
+
+  <button onclick="iniciarPuenteDigital(productos)">Consultar tipo de cambio y convertir catálogo</button>
+
+  <p id="pd-estado"></p>
+  <div id="pd-catalogo"></div>
+
+  <script src="productos-data.js"></script>
+  <script src="puente-digital.js"></script>
+</body>
+</html>
