@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Demo: La Arquitectura del Gigante</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 900px; margin: 0 auto; padding: 0 20px 60px; color: #1f2937; background: #fafafa; line-height: 1.55; }
+  h1 { font-size: 1.4rem; margin-bottom: 4px; }
+  .subtitulo { color: #6b7280; margin-top: 0; }
+  h2 { font-size: 1.1rem; margin-top: 34px; padding-top: 10px; border-top: 1px solid #e5e7eb; }
+  code { font-family: monospace; background: #f0f0f0; padding: 1px 5px; border-radius: 3px; font-size: 0.88rem; }
+  .caja { background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px 20px; margin: 14px 0; }
+  .nota { background: #fffbeb; border-left: 4px solid #f59e0b; padding: 10px 14px; border-radius: 4px; font-size: 0.9rem; margin: 14px 0; }
+  .fila { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; align-items: end; }
+  label { display: block; font-size: 0.8rem; font-weight: 600; color: #374151; margin: 10px 0 4px; }
+  input[type="text"], select { width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.95rem; font-family: inherit; background: white; }
+  .btn { background: #1d4ed8; color: #fff; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-size: 0.88rem; font-weight: 600; }
+  .btn:hover { background: #1e40af; }
+  .btn.secundario { background: #e5e7eb; color: #1f2937; }
+  .btn.secundario:hover { background: #d1d5db; }
+  .resultado-benchmark { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+  .tarjeta-resultado { background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 14px 18px; }
+  .tarjeta-resultado h3 { margin: 0 0 6px; font-size: 0.95rem; }
+  .tarjeta-resultado .tiempo { font-size: 1.6rem; font-weight: 700; }
+  .tarjeta-resultado.ingenuo .tiempo { color: #991b1b; }
+  .tarjeta-resultado.escalable .tiempo { color: #166534; }
+  .catalogo-vista { max-height: 220px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 6px; padding: 8px 12px; margin-top: 10px; background: #fafafa; font-size: 0.82rem; }
+  .catalogo-item { padding: 2px 0; border-bottom: 1px solid #eee; }
+  .paginacion { display: flex; gap: 8px; align-items: center; margin-top: 10px; font-size: 0.85rem; }
+</style>
+</head>
+<body>
+
+<h1>Demo: La Arquitectura del Gigante</h1>
+<p class="subtitulo">Sesión 4 — Modelo de Negocio Canvas y Mercados Electrónicos</p>
+
+<p>El sitio real de Grafiluz escribe cada producto de cada categoría directamente en el HTML
+(<code>Implementado-.../index.html</code> tiene más de 6,000 líneas solo para eso). Funciona con
+unas decenas de productos, pero <strong>no escala</strong> como lo hace un marketplace real (eBay,
+Alibaba, Amazon), que puede tener miles o millones de productos. Esta demo compara, con números reales
+de tu propio navegador, el patrón actual ("ingenuo") contra el patrón escalable (índice + paginación),
+usando <code>Codigo/motor-catalogo.js</code>.</p>
+
+<h2>1. Configura el catálogo de prueba</h2>
+<div class="caja">
+  <div class="fila">
+    <div>
+      <label for="tamanoCatalogo">Tamaño del catálogo sintético</label>
+      <select id="tamanoCatalogo">
+        <option value="50">50 productos (tamaño actual aprox. de Grafiluz)</option>
+        <option value="500">500 productos</option>
+        <option value="2000" selected>2,000 productos</option>
+        <option value="10000">10,000 productos (marketplace pequeño)</option>
+      </select>
+    </div>
+    <div>
+      <button class="btn" onclick="ejecutarBenchmark()">⚡ Ejecutar comparación</button>
+    </div>
+  </div>
+  <p class="nota">El catálogo sintético se genera repitiendo los 5 productos reales de
+  <code>productos-data.js</code> (mismo modelo de datos de la Sesión 2), solo para tener volumen
+  suficiente y poder medir la diferencia. No son productos reales de Grafiluz.</p>
+</div>
+
+<div class="resultado-benchmark">
+  <div class="tarjeta-resultado ingenuo">
+    <h3>❌ Patrón actual: renderizar todo el catálogo</h3>
+    <div class="tiempo" id="tiempoIngenuo">—</div>
+    <div class="catalogo-vista" id="vistaIngenuo"></div>
+  </div>
+  <div class="tarjeta-resultado escalable">
+    <h3>✅ Patrón escalable: índice + paginación (10 por página)</h3>
+    <div class="tiempo" id="tiempoEscalable">—</div>
+    <div class="catalogo-vista" id="vistaEscalable"></div>
+    <div class="paginacion">
+      <button class="btn secundario" onclick="cambiarPagina(-1)">← Anterior</button>
+      <span id="infoPagina">Página 1</span>
+      <button class="btn secundario" onclick="cambiarPagina(1)">Siguiente →</button>
+    </div>
+  </div>
+</div>
+
+<h2>2. Búsqueda por categoría (usando el índice)</h2>
+<div class="caja">
+  <div class="fila">
+    <div>
+      <label for="filtroCategoria">Categoría</label>
+      <select id="filtroCategoria" onchange="mpBuscar()"></select>
+    </div>
+    <div>
+      <label for="filtroTexto">Buscar por nombre</label>
+      <input type="text" id="filtroTexto" placeholder="Ej: Llavero" oninput="mpBuscar()">
+    </div>
+    <div><span id="infoResultados" style="font-size:0.85rem;color:#6b7280;"></span></div>
+  </div>
+  <div class="catalogo-vista" id="vistaBusqueda" style="max-height:260px;"></div>
+</div>
+
+<p class="nota">
+  <strong>Conclusión pedagógica:</strong> mientras más grande el catálogo, más se nota la diferencia.
+  El patrón "ingenuo" recorre y renderiza TODO cada vez; el patrón con índice hace la búsqueda por
+  categoría en O(1) (mapa por categoría) y solo dibuja la página pedida — así es como Grafiluz podría
+  crecer de 30 productos a 30,000 sin que el sitio colapse.
+</p>
+
+<script src="productos-data.js"></script>
+<script src="motor-catalogo.js"></script>
+<script>
+  let indiceActual = null;
+  let paginaActual = 1;
+  const PRODUCTOS_POR_PAGINA = 10;
+
+  function ejecutarBenchmark() {
+    const cantidad = Number(document.getElementById('tamanoCatalogo').value);
+    const catalogoSintetico = generarCatalogoSintetico(productos, cantidad);
+
+    // Patrón ingenuo: render de todo el catálogo de una vez.
+    const tiempoIngenuo = renderizarTodoSinIndice(catalogoSintetico, document.getElementById('vistaIngenuo'));
+    document.getElementById('tiempoIngenuo').textContent = `${tiempoIngenuo.toFixed(2)} ms (${cantidad} tarjetas dibujadas)`;
+
+    // Patrón escalable: construir índice una vez, luego paginar.
+    const inicioIndice = performance.now();
+    indiceActual = construirIndice(catalogoSintetico);
+    const tiempoIndice = performance.now() - inicioIndice;
+
+    paginaActual = 1;
+    const tiempoRenderPagina = renderizarConIndice(indiceActual, { pagina: paginaActual, porPagina: PRODUCTOS_POR_PAGINA }, document.getElementById('vistaEscalable'));
+    document.getElementById('tiempoEscalable').textContent = `${(tiempoIndice + tiempoRenderPagina).toFixed(2)} ms (índice: ${tiempoIndice.toFixed(2)} ms + 10 tarjetas: ${tiempoRenderPagina.toFixed(2)} ms)`;
+    actualizarInfoPagina();
+
+    poblarCategorias(catalogoSintetico);
+    mpBuscar();
+  }
+
+  function actualizarInfoPagina() {
+    const { totalPaginas } = buscarProductos(indiceActual, { pagina: paginaActual, porPagina: PRODUCTOS_POR_PAGINA });
+    document.getElementById('infoPagina').textContent = `Página ${paginaActual} de ${totalPaginas}`;
+  }
+
+  function cambiarPagina(delta) {
+    if (!indiceActual) return;
+    const { totalPaginas } = buscarProductos(indiceActual, { pagina: paginaActual, porPagina: PRODUCTOS_POR_PAGINA });
+    paginaActual = Math.min(totalPaginas, Math.max(1, paginaActual + delta));
+    renderizarConIndice(indiceActual, { pagina: paginaActual, porPagina: PRODUCTOS_POR_PAGINA }, document.getElementById('vistaEscalable'));
+    actualizarInfoPagina();
+  }
+
+  function poblarCategorias(catalogoSintetico) {
+    const categorias = [...new Set(catalogoSintetico.map(p => p.categoria))];
+    const select = document.getElementById('filtroCategoria');
+    select.innerHTML = '<option value="">Todas las categorías</option>' +
+      categorias.map(c => `<option value="${c}">${c}</option>`).join('');
+  }
+
+  function mpBuscar() {
+    if (!indiceActual) return;
+    const categoria = document.getElementById('filtroCategoria').value;
+    const texto = document.getElementById('filtroTexto').value;
+    const { resultados, total } = buscarProductos(indiceActual, { categoria, texto, pagina: 1, porPagina: 20 });
+    document.getElementById('vistaBusqueda').innerHTML = resultados
+      .map(p => `<div class="catalogo-item">${p.nombre} (${p.categoria}) — S/ ${p.precioReferencialPEN.toFixed(2)}</div>`)
+      .join('') || '<em>Sin resultados</em>';
+    document.getElementById('infoResultados').textContent = `${total} resultado(s) — mostrando hasta 20`;
+  }
+
+  ejecutarBenchmark();
+</script>
+
+</body>
+</html>
