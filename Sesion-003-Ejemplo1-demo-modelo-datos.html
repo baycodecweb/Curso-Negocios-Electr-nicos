@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Demo: El Plano Maestro de la Memoria (DER)</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 900px; margin: 0 auto; padding: 0 20px 60px; color: #1f2937; background: #fafafa; line-height: 1.55; }
+  h1 { font-size: 1.4rem; margin-bottom: 4px; }
+  .subtitulo { color: #6b7280; margin-top: 0; }
+  h2 { font-size: 1.1rem; margin-top: 34px; padding-top: 10px; border-top: 1px solid #e5e7eb; }
+  code { font-family: monospace; background: #f0f0f0; padding: 1px 5px; border-radius: 3px; font-size: 0.88rem; }
+  .caja { background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px 20px; margin: 14px 0; }
+  .nota { background: #fffbeb; border-left: 4px solid #f59e0b; padding: 10px 14px; border-radius: 4px; font-size: 0.9rem; margin: 14px 0; }
+  label { display: block; font-size: 0.8rem; font-weight: 600; color: #374151; margin: 10px 0 4px; }
+  input[type="text"], select { width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.95rem; font-family: inherit; background: white; }
+  .fila { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .btn { background: #1d4ed8; color: #fff; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-size: 0.88rem; font-weight: 600; margin-top: 14px; }
+  .btn:hover { background: #1e40af; }
+  .btn.secundario { background: #e5e7eb; color: #1f2937; }
+  .btn.secundario:hover { background: #d1d5db; }
+  .btn.peligro { background: #fee2e2; color: #991b1b; }
+  .btn.peligro:hover { background: #fecaca; }
+  .carrito-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; }
+  .carrito-item input[type="number"] { width: 70px; padding: 4px 6px; border: 1px solid #d1d5db; border-radius: 4px; }
+  table { width: 100%; border-collapse: collapse; margin: 10px 0 24px; font-size: 0.82rem; background: white; }
+  th, td { border: 1px solid #e5e7eb; padding: 6px 8px; text-align: left; }
+  th { background: #f3f4f6; }
+  .estado-pendiente { color: #92400e; font-weight: 600; }
+  .estado-pagado { color: #166534; font-weight: 600; }
+  #resultado { margin-top: 14px; font-size: 0.88rem; color: #1d4ed8; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<h1>Demo: El Plano Maestro de la Memoria (DER)</h1>
+<p class="subtitulo">Sesión 3 — Negocios y Empresas Digitales (B2B, B2C, C2C)</p>
+
+<p>Esta demo no usa una base de datos real (eso llega en la Sesión 7, con la pasarela de pago). Simula, en el navegador,
+las <strong>5 tablas relacionadas</strong> descritas en <code>Codigo/db-modelo.js</code>: <code>clientes</code>,
+<code>productos</code> (reutilizados de la Sesión 2), <code>pedidos</code>, <code>detallePedido</code> y <code>pagos</code>.</p>
+
+<h2>1. Diagrama Entidad-Relación</h2>
+<div class="caja">
+<pre class="mermaid">
+erDiagram
+    CLIENTE ||--o{ PEDIDO : realiza
+    PEDIDO ||--|{ DETALLE_PEDIDO : contiene
+    PRODUCTO ||--o{ DETALLE_PEDIDO : "aparece en"
+    PEDIDO ||--|| PAGO : genera
+
+    CLIENTE {
+        int id PK
+        string nombre
+        string tipo "B2B o B2C"
+        string empresa
+        string ruc
+        string email
+        string telefono
+    }
+    PRODUCTO {
+        string id PK
+        string categoria
+        string nombre
+        float precioReferencialPEN
+    }
+    PEDIDO {
+        int id PK
+        int clienteId FK
+        string fecha
+        string estado "Pendiente / Pagado"
+        float total
+    }
+    DETALLE_PEDIDO {
+        int id PK
+        int pedidoId FK
+        string productoId FK
+        int cantidad
+        float precioUnitario
+        float subtotal
+    }
+    PAGO {
+        int id PK
+        int pedidoId FK
+        string metodo "definido en Sesión 7"
+        float monto
+        string estado "Pendiente / Pagado"
+        string fecha
+    }
+</pre>
+</div>
+
+<h2>2. Registrar un cliente</h2>
+<div class="caja">
+  <div class="fila">
+    <div>
+      <label for="nombreCliente">Nombre / Razón social</label>
+      <input type="text" id="nombreCliente" placeholder="Ej: Minera Sur S.A.C.">
+    </div>
+    <div>
+      <label for="tipoCliente">Tipo de cliente</label>
+      <select id="tipoCliente" onchange="alternarCamposEmpresa()">
+        <option value="B2C">B2C — persona individual</option>
+        <option value="B2B">B2B — empresa (compra al por mayor)</option>
+      </select>
+    </div>
+  </div>
+  <div class="fila" id="camposEmpresa" style="display:none;">
+    <div>
+      <label for="empresaCliente">Empresa</label>
+      <input type="text" id="empresaCliente" placeholder="Nombre de la empresa">
+    </div>
+    <div>
+      <label for="rucCliente">RUC</label>
+      <input type="text" id="rucCliente" placeholder="20123456789">
+    </div>
+  </div>
+  <button class="btn" onclick="registrarCliente()">+ Registrar cliente</button>
+  <p id="clienteActivo" class="nota" style="display:none;"></p>
+</div>
+
+<h2>3. Generar un pedido (carrito → DetallePedido → Pago)</h2>
+<div class="caja">
+  <div id="listaCarrito"></div>
+  <button class="btn" onclick="generarPedido()">🧾 Generar pedido</button>
+  <div id="resultado"></div>
+</div>
+
+<h2>4. Las tablas de la "base de datos" (en vivo)</h2>
+<button class="btn secundario" onclick="renderizarTablas()">🔄 Refrescar tablas</button>
+<button class="btn peligro" onclick="borrarDatos()">🗑️ Borrar datos de prueba</button>
+
+<h3>clientes</h3>
+<div id="tabla-clientes"></div>
+<h3>pedidos</h3>
+<div id="tabla-pedidos"></div>
+<h3>detallePedido</h3>
+<div id="tabla-detalle"></div>
+<h3>pagos</h3>
+<div id="tabla-pagos"></div>
+
+<p class="nota">Nota: cada alumno reemplaza <code>Codigo/productos-data.js</code> y el modelo de <code>Cliente</code> con
+las entidades reales de su propio proyecto, manteniendo las mismas relaciones (1 cliente → N pedidos → N detalles → 1 pago).</p>
+
+<script src="productos-data.js"></script>
+<script src="db-modelo.js"></script>
+<script>
+  mermaid.initialize({ startOnLoad: true, theme: "neutral" });
+
+  let clienteActivoId = null;
+
+  function alternarCamposEmpresa() {
+    document.getElementById("camposEmpresa").style.display =
+      document.getElementById("tipoCliente").value === "B2B" ? "grid" : "none";
+  }
+
+  function registrarCliente() {
+    const nombre = document.getElementById("nombreCliente").value.trim();
+    if (!nombre) { alert("Escribe el nombre del cliente."); return; }
+    const tipo = document.getElementById("tipoCliente").value;
+    const cliente = crearCliente({
+      nombre,
+      tipo,
+      empresa: document.getElementById("empresaCliente").value.trim(),
+      ruc: document.getElementById("rucCliente").value.trim(),
+    });
+    clienteActivoId = cliente.id;
+    const info = document.getElementById("clienteActivo");
+    info.style.display = "block";
+    info.textContent = `Cliente activo: #${cliente.id} — ${cliente.nombre} (${cliente.tipo})`;
+    renderizarTablas();
+  }
+
+  function pintarCarrito() {
+    const contenedor = document.getElementById("listaCarrito");
+    contenedor.innerHTML = productos.map(p => `
+      <div class="carrito-item">
+        <input type="number" min="0" value="0" id="cant-${p.id}" data-id="${p.id}">
+        <span>${p.nombre} (${p.categoria}) — S/ ${p.precioReferencialPEN.toFixed(2)}</span>
+      </div>
+    `).join("");
+  }
+
+  function generarPedido() {
+    if (!clienteActivoId) { alert("Primero registra o selecciona un cliente."); return; }
+    const items = productos
+      .map(p => ({ productoId: p.id, cantidad: Number(document.getElementById(`cant-${p.id}`).value) }))
+      .filter(item => item.cantidad > 0);
+
+    if (items.length === 0) { alert("Agrega al menos un producto con cantidad mayor a 0."); return; }
+
+    const { pedido, pago } = crearPedido(clienteActivoId, items, productos);
+    document.getElementById("resultado").textContent =
+      `Pedido #${pedido.id} creado — Total S/ ${pedido.total.toFixed(2)} — Pago #${pago.id} en estado "${pago.estado}" (el cobro real se conecta en la Sesión 7).`;
+    renderizarTablas();
+  }
+
+  function tablaHtml(filas, columnas) {
+    if (filas.length === 0) return "<p style='color:#9ca3af;font-size:0.85rem;'>(vacío)</p>";
+    const encabezado = columnas.map(c => `<th>${c}</th>`).join("");
+    const cuerpo = filas.map(f => `<tr>${columnas.map(c => {
+      let valor = f[c];
+      if (c === "estado") {
+        const clase = valor === "Pagado" ? "estado-pagado" : "estado-pendiente";
+        return `<td class="${clase}">${valor}</td>`;
+      }
+      return `<td>${valor ?? ""}</td>`;
+    }).join("")}</tr>`).join("");
+    return `<table><thead><tr>${encabezado}</tr></thead><tbody>${cuerpo}</tbody></table>`;
+  }
+
+  function renderizarTablas() {
+    const t = obtenerTablas(productos);
+    document.getElementById("tabla-clientes").innerHTML =
+      tablaHtml(t.clientes, ["id", "nombre", "tipo", "empresa", "ruc"]);
+    document.getElementById("tabla-pedidos").innerHTML =
+      tablaHtml(t.pedidos, ["id", "clienteId", "fecha", "estado", "total"]);
+    document.getElementById("tabla-detalle").innerHTML =
+      tablaHtml(t.detallePedido, ["id", "pedidoId", "productoId", "cantidad", "precioUnitario", "subtotal"]);
+    document.getElementById("tabla-pagos").innerHTML =
+      tablaHtml(t.pagos, ["id", "pedidoId", "metodo", "monto", "estado", "fecha"]);
+  }
+
+  function borrarDatos() {
+    if (!confirm("¿Borrar todas las filas de prueba (clientes, pedidos, detalle y pagos)?")) return;
+    bdReiniciar();
+    clienteActivoId = null;
+    document.getElementById("clienteActivo").style.display = "none";
+    renderizarTablas();
+  }
+
+  pintarCarrito();
+  renderizarTablas();
+</script>
+
+</body>
+</html>
