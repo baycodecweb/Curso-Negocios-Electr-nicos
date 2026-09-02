@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Implementado: Sesión 4 sobre Sesión 3</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 800px; margin: 0 auto; padding: 0 20px 60px; color: #1f2937; background: #fafafa; line-height: 1.55; }
+  h1 { font-size: 1.4rem; margin-bottom: 4px; }
+  .subtitulo { color: #6b7280; margin-top: 0; }
+  h2 { font-size: 1.15rem; margin-top: 40px; padding-top: 12px; border-top: 1px solid #e5e7eb; }
+  code { font-family: monospace; background: #f0f0f0; padding: 1px 5px; border-radius: 3px; font-size: 0.9rem; }
+  pre { background: #0f172a; color: #e2e8f0; padding: 14px 16px; border-radius: 8px; overflow-x: auto; font-size: 0.85rem; }
+  pre code { background: none; padding: 0; color: inherit; }
+  .caja { background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px 20px; margin: 14px 0; }
+  .nota { background: #fffbeb; border-left: 4px solid #f59e0b; padding: 10px 14px; border-radius: 4px; font-size: 0.92rem; margin: 14px 0; }
+  a { color: #1d4ed8; }
+  table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.9rem; }
+  th, td { border: 1px solid #e5e7eb; padding: 8px 10px; text-align: left; vertical-align: top; }
+  th { background: #f3f4f6; }
+  ol { padding-left: 22px; }
+  li { margin-bottom: 4px; }
+  .barra-acciones { position: sticky; top: 0; background: #fafafa; padding: 14px 0 10px; margin-bottom: 6px; display: flex; gap: 10px; border-bottom: 1px solid #e5e7eb; z-index: 10; }
+  .btn { background: #1d4ed8; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; text-decoration: none; display: inline-block; }
+  .btn:hover { background: #1e40af; }
+  @media print {
+    .barra-acciones { display: none; }
+    body { max-width: 660px; }
+    h1, h2 { break-after: avoid; page-break-after: avoid; }
+    p, .caja, .nota, pre, li { break-inside: avoid; page-break-inside: avoid; }
+    table, tr { break-inside: avoid; page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<div class="barra-acciones">
+  <button class="btn" onclick="window.print()">🖨️ Imprimir / Guardar como PDF</button>
+  <a class="btn" href="index.html" style="background:#C41F25;">🌐 Abrir el sitio (index.html)</a>
+</div>
+
+<h1>Implementado: Sesión 4 sobre Sesión 3 — Resultado esperado</h1>
+
+<p>Esta carpeta <strong>no es un archivo nuevo de estudio</strong>: es una copia del proyecto de Grafiluz con las Sesiones 1, 2 y 3 ya integradas (catálogo, Puente Digital y modelo relacional), a la que ahora se le suma el código de la Sesión 4, para mostrar <strong>qué se espera que el alumno logre</strong> al adaptar las cuatro sesiones a su propio proyecto.</p>
+
+<h2>Qué se combinó</h2>
+<table>
+  <tr><th>Origen</th><th>Archivo</th><th>Rol</th></tr>
+  <tr><td>Sesión 1</td><td><code>index.html</code>, <code>script.js</code>, <code>styles.css</code></td><td>El sitio real de Grafiluz (catálogo, carruseles, botón de WhatsApp)</td></tr>
+  <tr><td>Sesión 2</td><td><code>productos-data.js</code>, <code>puente-digital.js</code></td><td>Modelado del catálogo y conexión a la API externa de tipo de cambio</td></tr>
+  <tr><td>Sesión 3</td><td><code>db-modelo.js</code></td><td>Modelo relacional: Cliente, Pedido, DetallePedido y Pago</td></tr>
+  <tr><td>Sesión 4</td><td><code>motor-catalogo.js</code></td><td>Índice en memoria (por id y categoría) + búsqueda paginada del catálogo</td></tr>
+</table>
+
+<h2>Qué cambió respecto al <code>index.html</code> integrado en la Sesión 3</h2>
+<ol>
+  <li>Se agregó un enlace en el menú: <strong>"BUSCADOR 🔎"</strong>.</li>
+  <li>Se agregó una nueva sección <code>&lt;section id="buscador-catalogo"&gt;</code> justo después de "Mi Pedido" (Sesión 3) y antes de la sección de clientes, con un cuadro de búsqueda por nombre, un filtro por categoría y paginación (3 resultados por página).</li>
+  <li>Se agregó el <code>&lt;script&gt;</code> de <code>motor-catalogo.js</code> al final del <code>body</code>, después de <code>db-modelo.js</code>, junto con el script que construye el índice y conecta el buscador a <code>buscarProductos()</code>.</li>
+  <li>Se agregaron los estilos <code>.buscador-section</code>, <code>.buscador-form</code>, <code>.buscador-resultados</code>, <code>.bc-item</code> y <code>.buscador-paginacion</code> al final de <code>styles.css</code>, reutilizando los colores de marca de Grafiluz.</li>
+</ol>
+<p>Nada de lo construido en las Sesiones 1, 2 y 3 fue eliminado: la integración es puramente aditiva. Las categorías de producto ya existentes (Artículos Antiestrés, Escritorio, Tomatodos, etc.) <strong>no se tocaron</strong> — siguen usando el patrón anterior a propósito, para que el contraste con el nuevo Buscador de Catálogo sea visible.</p>
+
+<h2>Por qué esto es "La Arquitectura del Gigante" y no solo un buscador más</h2>
+<p>El Buscador de Catálogo usa el mismo patrón que un marketplace real: los productos son datos, se indexan una sola vez (<code>construirIndice()</code>) y cada búsqueda o cambio de página solo dibuja unos pocos resultados (<code>buscarProductos()</code>), nunca el catálogo completo. Aquí se ve con solo 5 productos, pero el patrón es idéntico al que se necesitaría con 5,000: es exactamente lo que demuestra, con tiempos reales, <code>Codigo/demo-escalabilidad.html</code> (carpeta padre).</p>
+
+<div class="nota">
+  <strong>Nota honesta sobre el alcance:</strong> esta sesión NO migra las categorías existentes del sitio (serían más de 6,000 líneas de HTML que reescribir, un cambio grande y riesgoso para este punto del curso). Se demuestra el patrón escalable en una sección nueva y aditiva; documentar qué falta migrar es, precisamente, parte del entregable "La Arquitectura del Gigante".
+</div>
+
+<h2>Cómo probarlo</h2>
+<p>Como esta carpeta también incluye el Puente Digital (que usa <code>fetch</code>), hay que servirla por HTTP:</p>
+<pre><code>cd Implementado-Sesion-04-en-Sesion-03
+python3 -m http.server 8000</code></pre>
+<p>Luego abrir <code>http://localhost:8000/index.html</code>, navegar a "BUSCADOR 🔎" en el menú, y probar el filtro por categoría, la búsqueda por nombre y los botones de paginación.</p>
+
+</body>
+</html>
