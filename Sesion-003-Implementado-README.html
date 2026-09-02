@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Implementado: Sesión 3 sobre Sesión 2</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 800px; margin: 0 auto; padding: 0 20px 60px; color: #1f2937; background: #fafafa; line-height: 1.55; }
+  h1 { font-size: 1.4rem; margin-bottom: 4px; }
+  .subtitulo { color: #6b7280; margin-top: 0; }
+  h2 { font-size: 1.15rem; margin-top: 40px; padding-top: 12px; border-top: 1px solid #e5e7eb; }
+  code { font-family: monospace; background: #f0f0f0; padding: 1px 5px; border-radius: 3px; font-size: 0.9rem; }
+  pre { background: #0f172a; color: #e2e8f0; padding: 14px 16px; border-radius: 8px; overflow-x: auto; font-size: 0.85rem; }
+  pre code { background: none; padding: 0; color: inherit; }
+  .caja { background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px 20px; margin: 14px 0; }
+  .nota { background: #fffbeb; border-left: 4px solid #f59e0b; padding: 10px 14px; border-radius: 4px; font-size: 0.92rem; margin: 14px 0; }
+  a { color: #1d4ed8; }
+  table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.9rem; }
+  th, td { border: 1px solid #e5e7eb; padding: 8px 10px; text-align: left; vertical-align: top; }
+  th { background: #f3f4f6; }
+  ol { padding-left: 22px; }
+  li { margin-bottom: 4px; }
+  .barra-acciones { position: sticky; top: 0; background: #fafafa; padding: 14px 0 10px; margin-bottom: 6px; display: flex; gap: 10px; border-bottom: 1px solid #e5e7eb; z-index: 10; }
+  .btn { background: #1d4ed8; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; text-decoration: none; display: inline-block; }
+  .btn:hover { background: #1e40af; }
+  @media print {
+    .barra-acciones { display: none; }
+    body { max-width: 660px; }
+    h1, h2 { break-after: avoid; page-break-after: avoid; }
+    p, .caja, .nota, pre, li { break-inside: avoid; page-break-inside: avoid; }
+    table, tr { break-inside: avoid; page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<div class="barra-acciones">
+  <button class="btn" onclick="window.print()">🖨️ Imprimir / Guardar como PDF</button>
+  <a class="btn" href="index.html" style="background:#C41F25;">🌐 Abrir el sitio (index.html)</a>
+</div>
+
+<h1>Implementado: Sesión 3 sobre Sesión 2 — Resultado esperado</h1>
+
+<p>Esta carpeta <strong>no es un archivo nuevo de estudio</strong>: es una copia del proyecto real de Grafiluz con la Sesión 1 (catálogo) y la Sesión 2 (Puente Digital) ya integradas, a la que ahora se le suma el código de la Sesión 3, para mostrar <strong>qué se espera que el alumno logre</strong> al adaptar las tres sesiones a su propio proyecto.</p>
+
+<h2>Qué se combinó</h2>
+<table>
+  <tr><th>Origen</th><th>Archivo</th><th>Rol</th></tr>
+  <tr><td>Sesión 1</td><td><code>index.html</code>, <code>script.js</code>, <code>styles.css</code></td><td>El sitio real de Grafiluz (catálogo, carruseles, botón de WhatsApp)</td></tr>
+  <tr><td>Sesión 2</td><td><code>productos-data.js</code>, <code>puente-digital.js</code></td><td>Modelado del catálogo y conexión a la API externa de tipo de cambio</td></tr>
+  <tr><td>Sesión 3</td><td><code>db-modelo.js</code></td><td>Modelo relacional: Cliente, Pedido, DetallePedido y Pago, guardados en <code>localStorage</code> como si fueran tablas de una base de datos</td></tr>
+</table>
+
+<h2>Qué cambió respecto al <code>index.html</code> integrado en la Sesión 2</h2>
+<ol>
+  <li>Se agregó un enlace en el menú: <strong>"MI PEDIDO 🧾"</strong>.</li>
+  <li>Se agregó una nueva sección <code>&lt;section id="mi-pedido"&gt;</code> justo después de "Precios Referenciales Internacionales" (Sesión 2) y antes de la sección de clientes, con el formulario de registro de cliente (B2B/B2C), el carrito de productos y el resultado del pedido.</li>
+  <li>Se agregó el <code>&lt;script&gt;</code> de <code>db-modelo.js</code> al final del <code>body</code>, después de <code>puente-digital.js</code>, junto con un pequeño script inline que conecta el formulario con <code>crearCliente()</code> y <code>crearPedido()</code>.</li>
+  <li>Se agregaron los estilos <code>.pedido-section</code>, <code>.pedido-form</code>, <code>.pedido-campo</code>, <code>.pedido-carrito</code>, <code>.pedido-item</code> y <code>.pedido-resultado</code> al final de <code>styles.css</code>, usando los mismos colores de marca de Grafiluz (rojo <code>#C41F25</code> y azul <code>#1A1C72</code>) ya usados en la Sesión 2.</li>
+</ol>
+<p>Nada de lo construido en la Sesión 1 ni en la Sesión 2 fue eliminado: la integración es puramente aditiva.</p>
+
+<h2>Qué hace realmente el modelo de datos aquí</h2>
+<p>Al llenar el formulario y presionar "Generar pedido":</p>
+<ol>
+  <li><code>crearCliente()</code> inserta una fila en la tabla <code>clientes</code> (con <code>tipo: "B2B"</code> o <code>"B2C"</code>).</li>
+  <li><code>crearPedido()</code> inserta una fila en <code>pedidos</code>, una fila por cada producto elegido en <code>detallePedido</code>, y una fila en <code>pagos</code> con <code>estado: "Pendiente"</code>.</li>
+  <li>Se muestra el número de pedido y el total, y un botón para <strong>confirmar por WhatsApp</strong> (el cobro en línea real, con webhook, se conecta recién en la Sesión 7).</li>
+</ol>
+<p>Puedes inspeccionar las tablas generadas abriendo la consola del navegador y ejecutando <code>JSON.parse(localStorage.getItem('grafiluz-s3-bd-relacional'))</code>, o usando el panel visual de <code>Codigo/demo-modelo-datos.html</code> (carpeta padre).</p>
+
+<h2>Por qué este es el resultado esperado, y no solo la demo aislada</h2>
+<p><code>Codigo/demo-modelo-datos.html</code> (carpeta padre) demuestra el modelo relacional de forma aislada, con el diagrama DER, para enseñarlo en clase. <strong>Esta carpeta</strong> muestra cómo ese mismo modelo se integra dentro de un negocio real que ya tenía su catálogo (Sesión 1) y su Puente Digital (Sesión 2), sin romper nada de lo que ya funcionaba. Ese es el nivel de trabajo que se espera de cada alumno: no solo entender el código de ejemplo, sino <strong>incorporarlo a su propio proyecto</strong> de forma coherente con el resto del sitio.</p>
+
+<h2>Cómo probarlo</h2>
+<p>Como esta carpeta también incluye el Puente Digital (que usa <code>fetch</code>), hay que servirla por HTTP:</p>
+<pre><code>cd Implementado-Sesion-03-en-Sesion-02
+python3 -m http.server 8000</code></pre>
+<p>Luego abrir <code>http://localhost:8000/index.html</code>, navegar a "MI PEDIDO 🧾" en el menú, registrar un cliente (prueba con B2B y con B2C) y generar un pedido con uno o más productos.</p>
+
+<div class="nota">
+  <strong>Nota:</strong> el catálogo de esta carpeta sigue siendo el catálogo <strong>de ejemplo</strong> (5 productos) definido en la Sesión 2, no el catálogo completo real de Grafiluz — el objetivo aquí es mostrar el patrón de modelado e integración de datos, no reescribir todo el catálogo.
+</div>
+
+</body>
+</html>
