@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Demo: La Tienda que Observa</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 900px; margin: 0 auto; padding: 0 20px 60px; color: #1f2937; background: #fafafa; line-height: 1.55; }
+  h1 { font-size: 1.4rem; margin-bottom: 4px; }
+  .subtitulo { color: #6b7280; margin-top: 0; }
+  h2 { font-size: 1.1rem; margin-top: 34px; padding-top: 10px; border-top: 1px solid #e5e7eb; }
+  code { font-family: monospace; background: #f0f0f0; padding: 1px 5px; border-radius: 3px; font-size: 0.88rem; }
+  .caja { background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px 20px; margin: 14px 0; }
+  .nota { background: #fffbeb; border-left: 4px solid #f59e0b; padding: 10px 14px; border-radius: 4px; font-size: 0.9rem; margin: 14px 0; }
+  .btn { background: #1d4ed8; color: #fff; border: none; padding: 9px 16px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; margin: 4px 6px 4px 0; }
+  .btn:hover { background: #1e40af; }
+  .btn.secundario { background: #e5e7eb; color: #1f2937; }
+  .btn.secundario:hover { background: #d1d5db; }
+  .btn.peligro { background: #fee2e2; color: #991b1b; }
+  .btn.peligro:hover { background: #fecaca; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 16px 0; }
+  .kpi { background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 14px 16px; text-align: center; }
+  .kpi .valor { font-size: 1.6rem; font-weight: 700; color: #1d4ed8; }
+  .kpi .etiqueta { font-size: 0.78rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.02em; }
+  .barra-fila { display: flex; align-items: center; gap: 10px; margin: 6px 0; font-size: 0.85rem; }
+  .barra-fila .nombre { width: 200px; flex-shrink: 0; }
+  .barra-fondo { flex: 1; background: #f0f0f0; border-radius: 4px; overflow: hidden; height: 18px; }
+  .barra-relleno { background: #1d4ed8; height: 100%; }
+  .funnel { display: flex; gap: 10px; margin: 16px 0; flex-wrap: wrap; }
+  .funnel-paso { background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px 18px; text-align: center; flex: 1; min-width: 140px; }
+  .funnel-paso .valor { font-size: 1.4rem; font-weight: 700; color: #166534; }
+  table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.82rem; background: white; }
+  th, td { border: 1px solid #e5e7eb; padding: 6px 8px; text-align: left; }
+  th { background: #f3f4f6; }
+</style>
+</head>
+<body>
+
+<h1>Demo: La Tienda que Observa</h1>
+<p class="subtitulo">Sesión 5 — Marketing y Tecnologías Digitales</p>
+
+<p>Esta demo simula visitantes interactuando con la tienda (equivalente a lo que haría un píxel de
+Google Analytics o de Meta), usando <code>Codigo/motor-analitica.js</code>. Cada botón de abajo dispara
+un evento de negocio real, guardado en tu navegador, y el panel de control se actualiza al instante.</p>
+
+<h2>1. Simular actividad de visitantes</h2>
+<div class="caja">
+  <button class="btn" onclick="simularVisita()">👀 Simular visita a la tienda</button><br>
+  <button class="btn" onclick="simularClicWhatsApp('Muñeco Antiestrés')">💬 Consultar "Muñeco Antiestrés"</button>
+  <button class="btn" onclick="simularClicWhatsApp('Tomatodo Deportivo 750ml')">💬 Consultar "Tomatodo Deportivo"</button>
+  <button class="btn" onclick="simularClicPrecios()">💱 Ver precios internacionales</button>
+  <button class="btn" onclick="simularBusqueda()">🔎 Buscar en el catálogo</button>
+  <button class="btn" onclick="simularPedido()">🧾 Generar un pedido</button>
+  <br><button class="btn peligro" onclick="reiniciar()">🗑️ Reiniciar datos de prueba</button>
+</div>
+<p class="nota">En el sitio real (<code>Codigo/Implementado-Sesion-05-en-Sesion-04/</code>) estos eventos
+se disparan solos cuando el visitante hace clic en "Consultar" por WhatsApp, en "Consultar tipo de
+cambio" o en "Generar pedido" — aquí se simulan con botones solo para ver el panel reaccionar rápido.</p>
+
+<h2>2. Panel de control corporativo (en vivo)</h2>
+<div class="kpis">
+  <div class="kpi"><div class="valor" id="kpi-visitas">0</div><div class="etiqueta">Visitas</div></div>
+  <div class="kpi"><div class="valor" id="kpi-whatsapp">0</div><div class="etiqueta">Clics WhatsApp</div></div>
+  <div class="kpi"><div class="valor" id="kpi-precios">0</div><div class="etiqueta">Consultas de precio</div></div>
+  <div class="kpi"><div class="valor" id="kpi-busquedas">0</div><div class="etiqueta">Búsquedas</div></div>
+  <div class="kpi"><div class="valor" id="kpi-pedidos">0</div><div class="etiqueta">Pedidos generados</div></div>
+  <div class="kpi"><div class="valor" id="kpi-valor">S/ 0.00</div><div class="etiqueta">Valor pedidos</div></div>
+</div>
+
+<h3>Productos con más interés (clics a WhatsApp)</h3>
+<div id="barras-productos"></div>
+
+<h3>Embudo de conversión</h3>
+<div class="funnel">
+  <div class="funnel-paso"><div class="valor" id="funnel-visitas">0</div>Visitas</div>
+  <div class="funnel-paso"><div class="valor" id="funnel-interes">0</div>Mostraron interés<br>(WhatsApp o precios)</div>
+  <div class="funnel-paso"><div class="valor" id="funnel-pedidos">0</div>Generaron pedido</div>
+  <div class="funnel-paso"><div class="valor" id="funnel-tasa">0%</div>Tasa de conversión<br>(interés → pedido)</div>
+</div>
+
+<h3>Registro de eventos (últimos 10)</h3>
+<table id="tabla-eventos"><thead><tr><th>#</th><th>Tipo</th><th>Detalle</th><th>Fecha</th></tr></thead><tbody></tbody></table>
+
+<script src="motor-analitica.js"></script>
+<script>
+  function simularVisita() { trackVisita(); actualizarPanel(); }
+
+  function simularClicWhatsApp(producto) {
+    registrarEvento('clic_whatsapp', { producto });
+    actualizarPanel();
+  }
+
+  function simularClicPrecios() {
+    registrarEvento('clic_precios_internacionales', {});
+    actualizarPanel();
+  }
+
+  function simularBusqueda() {
+    registrarEvento('busqueda_catalogo', { texto: 'llavero' });
+    actualizarPanel();
+  }
+
+  function simularPedido() {
+    const total = Number((Math.random() * 200 + 20).toFixed(2));
+    registrarEvento('pedido_generado', { total });
+    actualizarPanel();
+  }
+
+  function reiniciar() {
+    if (!confirm('¿Borrar todos los eventos de prueba?')) return;
+    reiniciarAnalitica();
+    actualizarPanel();
+  }
+
+  function actualizarPanel() {
+    const r = calcularResumen();
+
+    document.getElementById('kpi-visitas').textContent = r.totalVisitas;
+    document.getElementById('kpi-whatsapp').textContent = r.totalClicsWhatsApp;
+    document.getElementById('kpi-precios').textContent = r.clicsPrecios;
+    document.getElementById('kpi-busquedas').textContent = r.busquedas;
+    document.getElementById('kpi-pedidos').textContent = r.totalPedidos;
+    document.getElementById('kpi-valor').textContent = `S/ ${r.valorTotalPedidos.toFixed(2)}`;
+
+    const maxInteres = Math.max(1, ...Object.values(r.productosConMasInteres));
+    document.getElementById('barras-productos').innerHTML = Object.entries(r.productosConMasInteres)
+      .sort((a, b) => b[1] - a[1])
+      .map(([nombre, veces]) => `
+        <div class="barra-fila">
+          <span class="nombre">${nombre}</span>
+          <div class="barra-fondo"><div class="barra-relleno" style="width:${(veces / maxInteres) * 100}%"></div></div>
+          <span>${veces}</span>
+        </div>
+      `).join('') || '<p style="color:#9ca3af;font-size:0.85rem;">(sin clics todavía)</p>';
+
+    const interesTotal = r.totalClicsWhatsApp + r.clicsPrecios;
+    document.getElementById('funnel-visitas').textContent = r.totalVisitas;
+    document.getElementById('funnel-interes').textContent = interesTotal;
+    document.getElementById('funnel-pedidos').textContent = r.totalPedidos;
+    document.getElementById('funnel-tasa').textContent = `${r.tasaConversion.toFixed(1)}%`;
+
+    const cuerpo = document.querySelector('#tabla-eventos tbody');
+    cuerpo.innerHTML = r.eventos.slice(-10).reverse().map(e => `
+      <tr>
+        <td>${e.id}</td>
+        <td>${e.tipo}</td>
+        <td>${JSON.stringify(e.detalle)}</td>
+        <td>${new Date(e.fecha).toLocaleTimeString()}</td>
+      </tr>
+    `).join('') || '<tr><td colspan="4" style="color:#9ca3af;">(vacío)</td></tr>';
+  }
+
+  actualizarPanel();
+</script>
+
+</body>
+</html>
