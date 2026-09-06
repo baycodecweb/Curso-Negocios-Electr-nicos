@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Demo: La Transacción Perfecta</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 900px; margin: 0 auto; padding: 0 20px 60px; color: #1f2937; background: #fafafa; line-height: 1.55; }
+  h1 { font-size: 1.4rem; margin-bottom: 4px; }
+  .subtitulo { color: #6b7280; margin-top: 0; }
+  h2 { font-size: 1.1rem; margin-top: 34px; padding-top: 10px; border-top: 1px solid #e5e7eb; }
+  code { font-family: monospace; background: #f0f0f0; padding: 1px 5px; border-radius: 3px; font-size: 0.88rem; }
+  .caja { background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px 20px; margin: 14px 0; }
+  .nota { background: #fffbeb; border-left: 4px solid #f59e0b; padding: 10px 14px; border-radius: 4px; font-size: 0.9rem; margin: 14px 0; }
+  label { display: block; font-size: 0.8rem; font-weight: 600; color: #374151; margin: 10px 0 4px; }
+  input[type="text"], select { width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.95rem; font-family: inherit; background: white; }
+  .fila { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .fila3 { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 12px; }
+  .btn { background: #1d4ed8; color: #fff; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-size: 0.88rem; font-weight: 600; margin-top: 14px; }
+  .btn:hover { background: #1e40af; }
+  .btn:disabled { background: #9ca3af; cursor: not-allowed; }
+  .btn.secundario { background: #e5e7eb; color: #1f2937; }
+  .btn.peligro { background: #fee2e2; color: #991b1b; }
+  table { width: 100%; border-collapse: collapse; margin: 10px 0 24px; font-size: 0.82rem; background: white; }
+  th, td { border: 1px solid #e5e7eb; padding: 6px 8px; text-align: left; }
+  th { background: #f3f4f6; }
+  .estado-pendiente { color: #92400e; font-weight: 600; }
+  .estado-pagado { color: #166534; font-weight: 600; }
+  #resultadoPago { margin-top: 14px; padding: 12px 16px; border-radius: 8px; font-size: 0.9rem; display: none; }
+  #resultadoPago.exito { background: #dcfce7; color: #166534; display: block; }
+  #resultadoPago.error { background: #fee2e2; color: #991b1b; display: block; }
+  .tarjetas-prueba { font-size: 0.82rem; color: #4b5563; }
+  .tarjetas-prueba code { display: inline-block; margin: 2px 0; }
+</style>
+</head>
+<body>
+
+<h1>Demo: La Transacción Perfecta</h1>
+<p class="subtitulo">Sesión 7 — Soluciones de Pago y Definición del Proyecto E-business</p>
+
+<p>Esta demo conecta el Pedido de la Sesión 3 con un pago real de extremo a extremo: se genera un pedido
+(queda en <code>Pendiente</code>), se paga con una tarjeta de prueba, y el "webhook" simulado en
+<code>Codigo/pasarela-pago.js</code> actualiza el pedido a <code>Pagado</code> — exactamente igual que lo
+haría una pasarela real, sin necesidad de una cuenta de Stripe/PayPal/MercadoPago que un alumno no tiene
+todavía.</p>
+
+<h2>1. Generar un pedido de prueba</h2>
+<div class="caja">
+  <div class="fila">
+    <div>
+      <label for="nombreCliente">Nombre del cliente</label>
+      <input type="text" id="nombreCliente" placeholder="Cliente de prueba">
+    </div>
+    <div>
+      <label for="productoElegido">Producto</label>
+      <select id="productoElegido"></select>
+    </div>
+  </div>
+  <button class="btn" onclick="generarPedidoPrueba()">🧾 Generar pedido</button>
+  <p id="infoPedido" class="nota" style="display:none;"></p>
+</div>
+
+<h2>2. Pagar con tarjeta (Sandbox)</h2>
+<div class="caja">
+  <p class="tarjetas-prueba">
+    Tarjetas de prueba (las mismas que documenta Stripe):<br>
+    <code>4242 4242 4242 4242</code> → pago exitoso<br>
+    <code>4000 0000 0000 0002</code> → rechazada por el banco<br>
+    <code>4000 0000 0000 9995</code> → fondos insuficientes
+  </p>
+  <div class="fila">
+    <div>
+      <label for="numeroTarjeta">Número de tarjeta</label>
+      <input type="text" id="numeroTarjeta" placeholder="4242 4242 4242 4242" maxlength="19">
+    </div>
+    <div>
+      <label for="nombreTitular">Nombre del titular</label>
+      <input type="text" id="nombreTitular" placeholder="Como aparece en la tarjeta">
+    </div>
+  </div>
+  <div class="fila3">
+    <div></div>
+    <div>
+      <label for="fechaExp">Vencimiento (MM/AA)</label>
+      <input type="text" id="fechaExp" placeholder="12/28" maxlength="5">
+    </div>
+    <div>
+      <label for="cvv">CVV</label>
+      <input type="text" id="cvv" placeholder="123" maxlength="4">
+    </div>
+  </div>
+  <button class="btn" id="btnPagar" onclick="procesarPago()" disabled>💳 Pagar</button>
+  <div id="resultadoPago"></div>
+</div>
+
+<h2>3. Tablas del modelo (antes / después del webhook)</h2>
+<button class="btn secundario" onclick="renderizarTablas()">🔄 Refrescar tablas</button>
+<button class="btn peligro" onclick="borrarDatos()">🗑️ Borrar datos de prueba</button>
+<h3>pedidos</h3>
+<div id="tabla-pedidos"></div>
+<h3>pagos</h3>
+<div id="tabla-pagos"></div>
+
+<script src="productos-data.js"></script>
+<script src="db-modelo.js"></script>
+<script src="pasarela-pago.js"></script>
+<script>
+  let clienteActivoId = null;
+  let pedidoActivoId = null;
+  let montoActivo = 0;
+
+  function poblarProductos() {
+    document.getElementById('productoElegido').innerHTML = productos
+      .map(p => `<option value="${p.id}">${p.nombre} — S/ ${p.precioReferencialPEN.toFixed(2)}</option>`)
+      .join('');
+  }
+
+  function generarPedidoPrueba() {
+    const nombre = document.getElementById('nombreCliente').value.trim() || 'Cliente de prueba';
+    clienteActivoId = crearCliente({ nombre, tipo: 'B2C' }).id;
+
+    const productoId = document.getElementById('productoElegido').value;
+    const { pedido } = crearPedido(clienteActivoId, [{ productoId, cantidad: 1 }], productos);
+    pedidoActivoId = pedido.id;
+    montoActivo = pedido.total;
+
+    document.getElementById('infoPedido').style.display = 'block';
+    document.getElementById('infoPedido').textContent =
+      `Pedido #${pedido.id} generado — Total S/ ${pedido.total.toFixed(2)} — Estado: Pendiente. Ya puedes pagarlo abajo.`;
+    document.getElementById('btnPagar').disabled = false;
+    document.getElementById('resultadoPago').className = '';
+    document.getElementById('resultadoPago').textContent = '';
+
+    renderizarTablas();
+  }
+
+  async function procesarPago() {
+    if (!pedidoActivoId) { alert('Primero genera un pedido.'); return; }
+
+    const boton = document.getElementById('btnPagar');
+    boton.disabled = true;
+    boton.textContent = '⏳ Procesando pago...';
+
+    const resultado = await iniciarPago({
+      pedidoId: pedidoActivoId,
+      monto: montoActivo,
+      numeroTarjeta: document.getElementById('numeroTarjeta').value,
+    });
+
+    const div = document.getElementById('resultadoPago');
+    if (resultado.exito) {
+      div.className = 'exito';
+      div.textContent = `✅ Pago exitoso — Transacción ${resultado.transaccionId}. El webhook actualizó el Pedido #${resultado.pedido.id} a "Pagado".`;
+    } else {
+      div.className = 'error';
+      div.textContent = `❌ Pago no procesado: ${resultado.mensaje}`;
+    }
+
+    boton.disabled = false;
+    boton.textContent = '💳 Pagar';
+    renderizarTablas();
+  }
+
+  function tablaHtml(filas, columnas) {
+    if (filas.length === 0) return "<p style='color:#9ca3af;font-size:0.85rem;'>(vacío)</p>";
+    const encabezado = columnas.map(c => `<th>${c}</th>`).join("");
+    const cuerpo = filas.map(f => `<tr>${columnas.map(c => {
+      let valor = f[c];
+      if (c === "estado") {
+        const clase = valor === "Pagado" ? "estado-pagado" : "estado-pendiente";
+        return `<td class="${clase}">${valor}</td>`;
+      }
+      return `<td>${valor ?? ""}</td>`;
+    }).join("")}</tr>`).join("");
+    return `<table><thead><tr>${encabezado}</tr></thead><tbody>${cuerpo}</tbody></table>`;
+  }
+
+  function renderizarTablas() {
+    const t = obtenerTablas(productos);
+    document.getElementById('tabla-pedidos').innerHTML =
+      tablaHtml(t.pedidos, ["id", "clienteId", "fecha", "estado", "total"]);
+    document.getElementById('tabla-pagos').innerHTML =
+      tablaHtml(t.pagos, ["id", "pedidoId", "metodo", "monto", "estado", "transaccionId", "fecha"]);
+  }
+
+  function borrarDatos() {
+    if (!confirm('¿Borrar todos los datos de prueba (clientes, pedidos, pagos)?')) return;
+    bdReiniciar();
+    clienteActivoId = null;
+    pedidoActivoId = null;
+    document.getElementById('infoPedido').style.display = 'none';
+    document.getElementById('btnPagar').disabled = true;
+    document.getElementById('resultadoPago').className = '';
+    document.getElementById('resultadoPago').textContent = '';
+    renderizarTablas();
+  }
+
+  poblarProductos();
+  renderizarTablas();
+</script>
+
+</body>
+</html>
