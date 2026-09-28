@@ -1,0 +1,514 @@
+<title>Anatomía del CRUD</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --bg: #EEF2F4;
+    --surface: #FFFFFF;
+    --surface-2: #E6ECEF;
+    --border: #D2DBE1;
+    --text: #16212B;
+    --text-muted: #5A6B78;
+    --accent: #157A80;
+    --accent-soft: rgba(21,122,128,0.10);
+    --syn-fn: #157A80;
+    --syn-string: #9C4568;
+    --syn-var: #4054B2;
+    --code-line-hover: rgba(21,122,128,0.10);
+    --code-line-active-border: #157A80;
+    --badge-get-bg: rgba(64,84,178,0.12);
+    --badge-get-fg: #4054B2;
+    --badge-post-bg: rgba(156,69,104,0.12);
+    --badge-post-fg: #9C4568;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0F161C;
+      --surface: #151E26;
+      --surface-2: #1A2430;
+      --border: #29343E;
+      --text: #E7EDF0;
+      --text-muted: #93A3AE;
+      --accent: #52D6DA;
+      --accent-soft: rgba(82,214,218,0.14);
+      --syn-fn: #5AD6DA;
+      --syn-string: #E993B6;
+      --syn-var: #93A8FF;
+      --code-line-hover: rgba(82,214,218,0.10);
+      --code-line-active-border: #52D6DA;
+      --badge-get-bg: rgba(147,168,255,0.16);
+      --badge-get-fg: #93A8FF;
+      --badge-post-bg: rgba(233,147,182,0.16);
+      --badge-post-fg: #E993B6;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0F161C;
+    --surface: #151E26;
+    --surface-2: #1A2430;
+    --border: #29343E;
+    --text: #E7EDF0;
+    --text-muted: #93A3AE;
+    --accent: #52D6DA;
+    --accent-soft: rgba(82,214,218,0.14);
+    --syn-fn: #5AD6DA;
+    --syn-string: #E993B6;
+    --syn-var: #93A8FF;
+    --code-line-hover: rgba(82,214,218,0.10);
+    --code-line-active-border: #52D6DA;
+    --badge-get-bg: rgba(147,168,255,0.16);
+    --badge-get-fg: #93A8FF;
+    --badge-post-bg: rgba(233,147,182,0.16);
+    --badge-post-fg: #E993B6;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+    line-height: 1.55;
+  }
+
+  .page { max-width: 1180px; margin: 0 auto; padding: 3.5rem 1.5rem 5rem; }
+
+  .header { max-width: 68ch; margin-bottom: 2rem; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 0.5em;
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--accent); margin: 0 0 0.9rem;
+  }
+  h1 {
+    font-weight: 700; font-size: clamp(1.9rem, 1.5rem + 1.6vw, 2.6rem);
+    line-height: 1.15; letter-spacing: -0.01em; margin: 0 0 0.75rem; text-wrap: balance;
+  }
+  .subtitle { color: var(--text-muted); font-size: 1.05rem; margin: 0; text-wrap: pretty; }
+
+  .summary {
+    display: flex; gap: 1rem; align-items: flex-start;
+    background: var(--surface); border: 1px solid var(--border);
+    border-left: 3px solid var(--accent); border-radius: 8px;
+    padding: 1.1rem 1.3rem; margin-bottom: 1.5rem; max-width: 82ch;
+  }
+  .summary-label {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 0.72rem;
+    text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent);
+    white-space: nowrap; padding-top: 0.2rem;
+  }
+  .summary p { margin: 0; color: var(--text); font-size: 0.98rem; }
+
+  /* CRUD mapping table */
+  .crud-map {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.9rem;
+    margin-bottom: 3rem; max-width: 100%;
+  }
+  @media (max-width: 760px) { .crud-map { grid-template-columns: 1fr 1fr; } }
+  .crud-cell {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 0.9rem 1rem; display: flex; flex-direction: column; gap: 0.3rem;
+  }
+  .crud-letter {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 1.3rem;
+    font-weight: 600; color: var(--accent);
+  }
+  .crud-op { font-size: 0.8rem; color: var(--text-muted); }
+  .crud-file {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 0.85rem;
+    background: var(--surface-2); padding: 0.15rem 0.5rem; border-radius: 4px;
+    width: fit-content; margin-top: 0.2rem;
+  }
+
+  /* hub diagram */
+  .hub-wrap { margin-bottom: 3rem; }
+  .hub-index {
+    background: var(--accent-soft); border: 1px solid var(--accent); border-radius: 10px;
+    padding: 1rem 1.3rem; max-width: 420px; margin: 0 auto 0.4rem; text-align: center;
+  }
+  .hub-index .file-name {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace; font-weight: 600; font-size: 0.95rem;
+  }
+  .hub-index p { margin: 0.2rem 0 0; font-size: 0.83rem; color: var(--text-muted); }
+
+  .hub-branches {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem;
+    max-width: 940px; margin: 0 auto; padding-top: 0.5rem;
+  }
+  @media (max-width: 760px) { .hub-branches { grid-template-columns: 1fr; max-width: 420px; } }
+  .branch { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; text-align: center; }
+  .branch-arrow {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 0.68rem;
+    color: var(--text-muted); letter-spacing: 0.02em;
+  }
+  .branch-arrow.down::before { content: "↓ "; }
+  .branch-arrow.up::before { content: "↑ "; }
+  .branch-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 0.8rem 1rem; width: 100%;
+  }
+  .branch-card .file-name {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace; font-weight: 600; font-size: 0.88rem;
+  }
+  .branch-card p { margin: 0.3rem 0 0; font-size: 0.82rem; color: var(--text-muted); }
+
+  .file-section { margin-bottom: 3.5rem; }
+  .file-section:last-child { margin-bottom: 0; }
+  .file-title {
+    display: flex; align-items: center; gap: 0.6rem;
+    font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 1.05rem; font-weight: 600;
+    margin: 0 0 1.2rem; padding-bottom: 0.6rem; border-bottom: 1px solid var(--border);
+  }
+  .badge {
+    display: inline-block; font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 0.68rem; letter-spacing: 0.04em; padding: 0.05rem 0.5rem;
+    border-radius: 999px; width: fit-content;
+  }
+  .badge.get { background: var(--badge-get-bg); color: var(--badge-get-fg); }
+  .badge.post { background: var(--badge-post-bg); color: var(--badge-post-fg); }
+
+  .layout {
+    display: grid; grid-template-columns: minmax(0, 460px) minmax(0, 1fr);
+    gap: 2rem; align-items: start;
+  }
+  @media (max-width: 860px) { .layout { grid-template-columns: 1fr; } }
+
+  .code-panel { background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  @media (min-width: 861px) { .code-panel { position: sticky; top: 2rem; } }
+  .code-panel-head {
+    display: flex; align-items: center; gap: 0.5rem; padding: 0.7rem 1rem;
+    border-bottom: 1px solid var(--border); font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 0.8rem; color: var(--text-muted);
+  }
+  .dots { display: inline-flex; gap: 5px; }
+  .dots span { width: 8px; height: 8px; border-radius: 50%; background: var(--border); }
+  .code { overflow-x: auto; padding: 0.4rem 0; }
+  .line {
+    display: grid; grid-template-columns: 2.6rem 1fr;
+    font-family: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Consolas, monospace;
+    font-size: 0.83rem; white-space: pre; border-left: 2px solid transparent;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .line { transition: background-color 0.15s ease, border-color 0.15s ease; }
+    .entry { transition: background-color 0.15s ease, border-color 0.15s ease; }
+  }
+  .line.active { background: var(--code-line-hover); border-left-color: var(--code-line-active-border); }
+  .ln {
+    color: var(--text-muted); opacity: 0.5; text-align: right;
+    padding: 0.12rem 0.75rem 0.12rem 0; user-select: none; font-variant-numeric: tabular-nums;
+  }
+  .code-text { padding: 0.12rem 1rem 0.12rem 0; color: var(--text); }
+  .blank .code-text::before { content: "\00a0"; }
+  .tag { color: var(--text-muted); font-weight: 500; }
+  .fn { color: var(--syn-fn); }
+  .str { color: var(--syn-string); }
+  .var { color: var(--syn-var); }
+
+  .walkthrough { display: flex; flex-direction: column; gap: 2.1rem; }
+  .group-label {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 0.75rem;
+    text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted);
+    margin: 0 0 0.9rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border);
+  }
+  .entries { display: flex; flex-direction: column; gap: 0.9rem; }
+  .entry {
+    background: var(--surface); border: 1px solid var(--border);
+    border-left: 2px solid transparent; border-radius: 8px; padding: 0.85rem 1.1rem;
+  }
+  .entry.active { background: var(--accent-soft); border-left-color: var(--accent); }
+  .entry-head { display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.35rem; }
+  .line-badge {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 0.72rem; color: var(--accent);
+    border: 1px solid var(--border); border-radius: 999px; padding: 0.05rem 0.55rem; flex-shrink: 0;
+  }
+  .snippet {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 0.82rem; color: var(--text);
+    background: var(--surface-2); padding: 0.1rem 0.45rem; border-radius: 4px; word-break: break-word;
+  }
+  .entry-text { margin: 0; color: var(--text-muted); font-size: 0.95rem; }
+
+  .tip {
+    margin-top: 2.6rem; max-width: 82ch; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 1.1rem 1.3rem; display: flex; gap: 1rem;
+  }
+  .tip-label {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 0.72rem;
+    text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted);
+    white-space: nowrap; padding-top: 0.2rem;
+  }
+  .tip p { margin: 0; font-size: 0.93rem; color: var(--text); }
+
+  .summary p code, .entry-text code, .tip p code, .branch-card p code {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 0.88em;
+    background: var(--surface-2); padding: 0.05rem 0.35rem; border-radius: 4px; color: var(--text);
+  }
+</style>
+
+<div class="page">
+  <div class="header">
+    <p class="eyebrow">PHP + MySQLi · 5-crud-crear-eliminar-borrar</p>
+    <h1>Anatomía del CRUD</h1>
+    <p class="subtitle">Cuatro archivos, cada uno con una sola responsabilidad, que juntos cubren las cuatro operaciones clásicas sobre datos: Crear, Leer, Actualizar y Borrar (CRUD).</p>
+  </div>
+
+  <div class="summary">
+    <span class="summary-label">Por qué funciona así</span>
+    <p>Cada operación vive en su propio archivo y, al terminar, redirige de vuelta a <code>index.php</code> — así esa página siempre refleja el estado real de la base de datos. Los enlaces (Agregar, Editar, Borrar) usan <strong>GET</strong> porque solo navegan; los formularios que guardan o actualizan usan <strong>POST</strong> porque modifican datos. El mismo principio de <code>4-php-formulario</code>, aplicado a cuatro archivos en vez de dos.</p>
+  </div>
+
+  <div class="crud-map">
+    <div class="crud-cell"><span class="crud-letter">C</span><span class="crud-op">Create — crear</span><span class="crud-file">crear.php</span></div>
+    <div class="crud-cell"><span class="crud-letter">R</span><span class="crud-op">Read — leer</span><span class="crud-file">index.php</span></div>
+    <div class="crud-cell"><span class="crud-letter">U</span><span class="crud-op">Update — actualizar</span><span class="crud-file">editar.php</span></div>
+    <div class="crud-cell"><span class="crud-letter">D</span><span class="crud-op">Delete — borrar</span><span class="crud-file">eliminar.php</span></div>
+  </div>
+
+  <div class="hub-wrap">
+    <div class="hub-index">
+      <span class="file-name">index.php</span>
+      <p>Lista todas las mascotas. Es el punto de partida y de regreso de las otras tres.</p>
+    </div>
+    <div class="hub-branches">
+      <div class="branch">
+        <span class="branch-arrow down">GET · clic en «Agregar»</span>
+        <div class="branch-card">
+          <span class="file-name">crear.php</span>
+          <p>Muestra el formulario vacío; al enviarlo (POST) inserta la mascota nueva.</p>
+        </div>
+        <span class="branch-arrow up">redirige a index.php</span>
+      </div>
+      <div class="branch">
+        <span class="branch-arrow down">GET · clic en «Editar» (?id=)</span>
+        <div class="branch-card">
+          <span class="file-name">editar.php</span>
+          <p>Muestra el formulario ya lleno con los datos actuales; al enviarlo (POST) actualiza esa fila.</p>
+        </div>
+        <span class="branch-arrow up">redirige a index.php</span>
+      </div>
+      <div class="branch">
+        <span class="branch-arrow down">GET · clic en «Borrar» (?id=)</span>
+        <div class="branch-card">
+          <span class="file-name">eliminar.php</span>
+          <p>Borra la fila de inmediato, sin mostrar ningún formulario.</p>
+        </div>
+        <span class="branch-arrow up">redirige a index.php</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- index.php -->
+  <div class="file-section">
+    <h2 class="file-title">index.php <span class="badge get">lee y lista</span></h2>
+    <div class="layout">
+      <div class="code-panel">
+        <div class="code-panel-head"><span class="dots"><span></span><span></span><span></span></span>index.php</div>
+        <div class="code">
+          <div class="line" data-group="i1"><span class="ln">1</span><span class="code-text"><span class="tag">&lt;?php</span></span></div>
+          <div class="line" data-group="i2"><span class="ln">2</span><span class="code-text"><span class="var">$conexion</span> = <span class="fn">mysqli_connect</span>(<span class="str">"localhost"</span>, <span class="str">"root"</span>, <span class="str">"baycodec"</span>, <span class="str">"escuela_mascotas"</span>);</span></div>
+          <div class="line" data-group="i3"><span class="ln">3</span><span class="code-text"><span class="var">$resultado</span> = <span class="fn">mysqli_query</span>(<span class="var">$conexion</span>, <span class="str">"SELECT * FROM mascotas"</span>);</span></div>
+          <div class="line" data-group="i4"><span class="ln">4</span><span class="code-text"><span class="tag">?&gt;</span></span></div>
+          <div class="line" data-group="i5"><span class="ln">5</span><span class="code-text">&lt;h1&gt;Mascotas&lt;/h1&gt;</span></div>
+          <div class="line" data-group="i6"><span class="ln">6</span><span class="code-text">&lt;a href="crear.php"&gt;Agregar&lt;/a&gt;&lt;br&gt;&lt;br&gt;</span></div>
+          <div class="line blank"><span class="ln">7</span><span class="code-text"></span></div>
+          <div class="line" data-group="i7"><span class="ln">8</span><span class="code-text"><span class="tag">&lt;?php</span> <span class="fn">while</span> (<span class="var">$fila</span> = <span class="fn">mysqli_fetch_assoc</span>(<span class="var">$resultado</span>)) { <span class="tag">?&gt;</span></span></div>
+          <div class="line" data-group="i8"><span class="ln">9</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;<span class="tag">&lt;?php</span> <span class="fn">echo</span> <span class="var">$fila</span>[<span class="str">"nombre"</span>] . <span class="str">" - "</span> . <span class="var">$fila</span>[<span class="str">"tipo"</span>] . <span class="str">" - "</span> . <span class="var">$fila</span>[<span class="str">"edad"</span>] . <span class="str">" años "</span>; <span class="tag">?&gt;</span></span></div>
+          <div class="line" data-group="i9"><span class="ln">10</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;&lt;a href="editar.php?id=<span class="tag">&lt;?php</span> <span class="fn">echo</span> <span class="var">$fila</span>[<span class="str">'id'</span>]; <span class="tag">?&gt;</span>"&gt;Editar&lt;/a&gt;</span></div>
+          <div class="line" data-group="i10"><span class="ln">11</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;&lt;a href="eliminar.php?id=<span class="tag">&lt;?php</span> <span class="fn">echo</span> <span class="var">$fila</span>[<span class="str">'id'</span>]; <span class="tag">?&gt;</span>"&gt;Borrar&lt;/a&gt;&lt;br&gt;</span></div>
+          <div class="line" data-group="i7"><span class="ln">12</span><span class="code-text"><span class="tag">&lt;?php</span> } <span class="tag">?&gt;</span></span></div>
+        </div>
+      </div>
+      <div class="walkthrough">
+        <section class="group">
+          <h2 class="group-label">Conectar y traer las mascotas</h2>
+          <div class="entries">
+            <article class="entry" data-group="i1"><div class="entry-head"><span class="line-badge">línea 1</span><code class="snippet">&lt;?php</code></div><p class="entry-text">Abre el bloque de código PHP.</p></article>
+            <article class="entry" data-group="i2"><div class="entry-head"><span class="line-badge">línea 2</span><code class="snippet">mysqli_connect(...)</code></div><p class="entry-text">Conecta con la base de datos.</p></article>
+            <article class="entry" data-group="i3"><div class="entry-head"><span class="line-badge">línea 3</span><code class="snippet">SELECT * FROM mascotas</code></div><p class="entry-text">Trae todas las mascotas guardadas.</p></article>
+            <article class="entry" data-group="i4"><div class="entry-head"><span class="line-badge">línea 4</span><code class="snippet">?&gt;</code></div><p class="entry-text">Cierra el bloque PHP para escribir el HTML de la página.</p></article>
+          </div>
+        </section>
+        <section class="group">
+          <h2 class="group-label">Encabezado y enlace para agregar</h2>
+          <div class="entries">
+            <article class="entry" data-group="i5"><div class="entry-head"><span class="line-badge">línea 5</span><code class="snippet">&lt;h1&gt;Mascotas&lt;/h1&gt;</code></div><p class="entry-text">Título fijo de la página.</p></article>
+            <article class="entry" data-group="i6"><div class="entry-head"><span class="line-badge">línea 6</span><code class="snippet">&lt;a href="crear.php"&gt;</code></div><p class="entry-text">Enlace fijo hacia <code>crear.php</code>, para agregar una mascota nueva.</p></article>
+          </div>
+        </section>
+        <section class="group">
+          <h2 class="group-label">Listar cada mascota con sus acciones</h2>
+          <div class="entries">
+            <article class="entry" data-group="i7"><div class="entry-head"><span class="line-badge">líneas 8 y 12</span><code class="snippet">&lt;?php while (...) { ?&gt; ... &lt;?php } ?&gt;</code></div><p class="entry-text">A diferencia de <code>buscar.php</code>, aquí el bucle entra y sale del modo PHP en cada vuelta, en vez de imprimir todo con <code>echo</code> dentro de un único bloque. Es otra forma válida de mezclar PHP con HTML — cómoda cuando lo que se repite es sobre todo HTML, con pocos datos sueltos en el medio.</p></article>
+            <article class="entry" data-group="i8"><div class="entry-head"><span class="line-badge">línea 9</span><code class="snippet">&lt;?php echo $fila["nombre"] . ... ?&gt;</code></div><p class="entry-text">Dentro de un mini-bloque PHP, imprime el nombre, tipo y edad de la mascota actual.</p></article>
+            <article class="entry" data-group="i9"><div class="entry-head"><span class="line-badge">línea 10</span><code class="snippet">&lt;a href="editar.php?id=..."&gt;</code></div><p class="entry-text">Arma el enlace "Editar", pasando el <code>id</code> de esta mascota como parámetro en la URL.</p></article>
+            <article class="entry" data-group="i10"><div class="entry-head"><span class="line-badge">línea 11</span><code class="snippet">&lt;a href="eliminar.php?id=..."&gt;</code></div><p class="entry-text">Arma el enlace "Borrar", igual que en <code>4-php-formulario</code>, pasando el <code>id</code> hacia <code>eliminar.php</code>.</p></article>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- crear.php -->
+  <div class="file-section">
+    <h2 class="file-title">crear.php <span class="badge post">crea</span></h2>
+    <div class="layout">
+      <div class="code-panel">
+        <div class="code-panel-head"><span class="dots"><span></span><span></span><span></span></span>crear.php</div>
+        <div class="code">
+          <div class="line" data-group="c1"><span class="ln">1</span><span class="code-text"><span class="tag">&lt;?php</span></span></div>
+          <div class="line" data-group="c2"><span class="ln">2</span><span class="code-text"><span class="var">$conexion</span> = <span class="fn">mysqli_connect</span>(<span class="str">"localhost"</span>, <span class="str">"root"</span>, <span class="str">"baycodec"</span>, <span class="str">"escuela_mascotas"</span>);</span></div>
+          <div class="line blank"><span class="ln">3</span><span class="code-text"></span></div>
+          <div class="line" data-group="c3"><span class="ln">4</span><span class="code-text"><span class="fn">if</span> (<span class="var">$_SERVER</span>[<span class="str">"REQUEST_METHOD"</span>] == <span class="str">"POST"</span>) {</span></div>
+          <div class="line" data-group="c4"><span class="ln">5</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;<span class="var">$nombre</span> = <span class="var">$_POST</span>[<span class="str">"nombre"</span>];</span></div>
+          <div class="line" data-group="c4"><span class="ln">6</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;<span class="var">$tipo</span>&nbsp;&nbsp; = <span class="var">$_POST</span>[<span class="str">"tipo"</span>];</span></div>
+          <div class="line" data-group="c4"><span class="ln">7</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;<span class="var">$edad</span>&nbsp; = (int) <span class="var">$_POST</span>[<span class="str">"edad"</span>];</span></div>
+          <div class="line" data-group="c5"><span class="ln">8</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;<span class="fn">mysqli_query</span>(<span class="var">$conexion</span>, <span class="str">"INSERT INTO mascotas (nombre, tipo, edad) VALUES ('</span><span class="var">$nombre</span><span class="str">', '</span><span class="var">$tipo</span><span class="str">', </span><span class="var">$edad</span><span class="str">)"</span>);</span></div>
+          <div class="line" data-group="c6"><span class="ln">9</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;<span class="fn">header</span>(<span class="str">"Location: index.php"</span>);</span></div>
+          <div class="line" data-group="c6"><span class="ln">10</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;<span class="fn">exit</span>;</span></div>
+          <div class="line" data-group="c3"><span class="ln">11</span><span class="code-text">}</span></div>
+          <div class="line" data-group="c7"><span class="ln">12</span><span class="code-text"><span class="tag">?&gt;</span></span></div>
+          <div class="line" data-group="c8"><span class="ln">13</span><span class="code-text">&lt;form method="post"&gt;</span></div>
+          <div class="line" data-group="c9"><span class="ln">14</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;Nombre: &lt;input name="nombre"&gt;&lt;br&gt;</span></div>
+          <div class="line" data-group="c9"><span class="ln">15</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;Tipo: &lt;input name="tipo"&gt;&lt;br&gt;</span></div>
+          <div class="line" data-group="c9"><span class="ln">16</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;Edad: &lt;input name="edad" type="number"&gt;&lt;br&gt;</span></div>
+          <div class="line" data-group="c10"><span class="ln">17</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;&lt;button type="submit"&gt;Guardar&lt;/button&gt;</span></div>
+          <div class="line" data-group="c11"><span class="ln">18</span><span class="code-text">&lt;/form&gt;</span></div>
+        </div>
+      </div>
+      <div class="walkthrough">
+        <section class="group">
+          <h2 class="group-label">Conectar y guardar (solo si llega un POST)</h2>
+          <div class="entries">
+            <article class="entry" data-group="c1"><div class="entry-head"><span class="line-badge">línea 1</span><code class="snippet">&lt;?php</code></div><p class="entry-text">Abre el bloque PHP.</p></article>
+            <article class="entry" data-group="c2"><div class="entry-head"><span class="line-badge">línea 2</span><code class="snippet">mysqli_connect(...)</code></div><p class="entry-text">Conecta con la base de datos.</p></article>
+            <article class="entry" data-group="c3"><div class="entry-head"><span class="line-badge">líneas 4 y 11</span><code class="snippet">if (...) { ... }</code></div><p class="entry-text">Igual que en <code>formulario.php</code>: este bloque solo se ejecuta si el formulario fue enviado por POST.</p></article>
+            <article class="entry" data-group="c4"><div class="entry-head"><span class="line-badge">líneas 5–7</span><code class="snippet">$nombre = $_POST["nombre"]; ...</code></div><p class="entry-text">Lee los 3 campos del formulario: nombre, tipo y edad (esta última convertida a número entero).</p></article>
+            <article class="entry" data-group="c5"><div class="entry-head"><span class="line-badge">línea 8</span><code class="snippet">mysqli_query(INSERT ...)</code></div><p class="entry-text">Inserta la mascota nueva en la tabla <code>mascotas</code>.</p></article>
+            <article class="entry" data-group="c6"><div class="entry-head"><span class="line-badge">líneas 9–10</span><code class="snippet">header(...); exit;</code></div><p class="entry-text"><code>header()</code> redirige de vuelta a <code>index.php</code>, y <code>exit;</code> detiene el script ahí mismo. Es necesario aquí porque, después de este bloque, el archivo todavía tiene el formulario — sin <code>exit;</code>, seguiría ejecutándose y podría llegar a mostrarse igual.</p></article>
+            <article class="entry" data-group="c7"><div class="entry-head"><span class="line-badge">línea 12</span><code class="snippet">?&gt;</code></div><p class="entry-text">Cierra el bloque PHP para escribir el formulario en HTML.</p></article>
+          </div>
+        </section>
+        <section class="group">
+          <h2 class="group-label">El formulario HTML</h2>
+          <div class="entries">
+            <article class="entry" data-group="c8"><div class="entry-head"><span class="line-badge">línea 13</span><code class="snippet">&lt;form method="post"&gt;</code></div><p class="entry-text">Envía los datos por POST, porque van a insertarse en la base de datos.</p></article>
+            <article class="entry" data-group="c9"><div class="entry-head"><span class="line-badge">líneas 14–16</span><code class="snippet">&lt;input name="nombre"&gt; ...</code></div><p class="entry-text">Los 3 campos: nombre, tipo y edad. Vacíos, porque esto es para crear una mascota nueva.</p></article>
+            <article class="entry" data-group="c10"><div class="entry-head"><span class="line-badge">línea 17</span><code class="snippet">&lt;button type="submit"&gt;</code></div><p class="entry-text">Botón que envía el formulario.</p></article>
+            <article class="entry" data-group="c11"><div class="entry-head"><span class="line-badge">línea 18</span><code class="snippet">&lt;/form&gt;</code></div><p class="entry-text">Cierra el formulario.</p></article>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- editar.php -->
+  <div class="file-section">
+    <h2 class="file-title">editar.php <span class="badge get">lee</span><span class="badge post" style="margin-left:-0.3rem">actualiza</span></h2>
+    <div class="layout">
+      <div class="code-panel">
+        <div class="code-panel-head"><span class="dots"><span></span><span></span><span></span></span>editar.php</div>
+        <div class="code">
+          <div class="line" data-group="e1"><span class="ln">1</span><span class="code-text"><span class="tag">&lt;?php</span></span></div>
+          <div class="line" data-group="e2"><span class="ln">2</span><span class="code-text"><span class="var">$conexion</span> = <span class="fn">mysqli_connect</span>(<span class="str">"localhost"</span>, <span class="str">"root"</span>, <span class="str">"baycodec"</span>, <span class="str">"escuela_mascotas"</span>);</span></div>
+          <div class="line" data-group="e3"><span class="ln">3</span><span class="code-text"><span class="var">$id</span> = (int) <span class="var">$_GET</span>[<span class="str">"id"</span>];</span></div>
+          <div class="line blank"><span class="ln">4</span><span class="code-text"></span></div>
+          <div class="line" data-group="e4"><span class="ln">5</span><span class="code-text"><span class="fn">if</span> (<span class="var">$_SERVER</span>[<span class="str">"REQUEST_METHOD"</span>] == <span class="str">"POST"</span>) {</span></div>
+          <div class="line" data-group="e5"><span class="ln">6</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;<span class="var">$nombre</span> = <span class="var">$_POST</span>[<span class="str">"nombre"</span>];</span></div>
+          <div class="line" data-group="e5"><span class="ln">7</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;<span class="var">$tipo</span>&nbsp;&nbsp; = <span class="var">$_POST</span>[<span class="str">"tipo"</span>];</span></div>
+          <div class="line" data-group="e5"><span class="ln">8</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;<span class="var">$edad</span>&nbsp; = (int) <span class="var">$_POST</span>[<span class="str">"edad"</span>];</span></div>
+          <div class="line" data-group="e6"><span class="ln">9</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;<span class="fn">mysqli_query</span>(<span class="var">$conexion</span>, <span class="str">"UPDATE mascotas SET nombre='</span><span class="var">$nombre</span><span class="str">', tipo='</span><span class="var">$tipo</span><span class="str">', edad=</span><span class="var">$edad</span><span class="str"> WHERE id=</span><span class="var">$id</span><span class="str">"</span>);</span></div>
+          <div class="line" data-group="e7"><span class="ln">10</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;<span class="fn">header</span>(<span class="str">"Location: index.php"</span>);</span></div>
+          <div class="line" data-group="e7"><span class="ln">11</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;<span class="fn">exit</span>;</span></div>
+          <div class="line" data-group="e4"><span class="ln">12</span><span class="code-text">}</span></div>
+          <div class="line blank"><span class="ln">13</span><span class="code-text"></span></div>
+          <div class="line" data-group="e8"><span class="ln">14</span><span class="code-text"><span class="var">$resultado</span> = <span class="fn">mysqli_query</span>(<span class="var">$conexion</span>, <span class="str">"SELECT * FROM mascotas WHERE id=</span><span class="var">$id</span><span class="str">"</span>);</span></div>
+          <div class="line" data-group="e9"><span class="ln">15</span><span class="code-text"><span class="var">$mascota</span> = <span class="fn">mysqli_fetch_assoc</span>(<span class="var">$resultado</span>);</span></div>
+          <div class="line" data-group="e10"><span class="ln">16</span><span class="code-text"><span class="tag">?&gt;</span></span></div>
+          <div class="line" data-group="e11"><span class="ln">17</span><span class="code-text">&lt;form method="post"&gt;</span></div>
+          <div class="line" data-group="e12"><span class="ln">18</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;Nombre: &lt;input name="nombre" value="<span class="tag">&lt;?php</span> <span class="fn">echo</span> <span class="var">$mascota</span>[<span class="str">'nombre'</span>]; <span class="tag">?&gt;</span>"&gt;&lt;br&gt;</span></div>
+          <div class="line" data-group="e12"><span class="ln">19</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;Tipo: &lt;input name="tipo" value="<span class="tag">&lt;?php</span> <span class="fn">echo</span> <span class="var">$mascota</span>[<span class="str">'tipo'</span>]; <span class="tag">?&gt;</span>"&gt;&lt;br&gt;</span></div>
+          <div class="line" data-group="e12"><span class="ln">20</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;Edad: &lt;input name="edad" value="<span class="tag">&lt;?php</span> <span class="fn">echo</span> <span class="var">$mascota</span>[<span class="str">'edad'</span>]; <span class="tag">?&gt;</span>" type="number"&gt;&lt;br&gt;</span></div>
+          <div class="line" data-group="e13"><span class="ln">21</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;&lt;button type="submit"&gt;Actualizar&lt;/button&gt;</span></div>
+          <div class="line" data-group="e14"><span class="ln">22</span><span class="code-text">&lt;/form&gt;</span></div>
+        </div>
+      </div>
+      <div class="walkthrough">
+        <section class="group">
+          <h2 class="group-label">Conectar y saber qué mascota es</h2>
+          <div class="entries">
+            <article class="entry" data-group="e1"><div class="entry-head"><span class="line-badge">línea 1</span><code class="snippet">&lt;?php</code></div><p class="entry-text">Abre el bloque PHP.</p></article>
+            <article class="entry" data-group="e2"><div class="entry-head"><span class="line-badge">línea 2</span><code class="snippet">mysqli_connect(...)</code></div><p class="entry-text">Conecta con la base de datos.</p></article>
+            <article class="entry" data-group="e3"><div class="entry-head"><span class="line-badge">línea 3</span><code class="snippet">$id = (int) $_GET["id"];</code></div><p class="entry-text">Lee el <code>id</code> de la mascota a editar, desde la URL (<code>?id=5</code>). Esta línea corre siempre, sea GET o POST — porque en ambos casos hace falta saber cuál mascota es.</p></article>
+          </div>
+        </section>
+        <section class="group">
+          <h2 class="group-label">Actualizar (solo si llega un POST)</h2>
+          <div class="entries">
+            <article class="entry" data-group="e4"><div class="entry-head"><span class="line-badge">líneas 5 y 12</span><code class="snippet">if (...) { ... }</code></div><p class="entry-text">Este bloque solo corre si el formulario de edición fue enviado.</p></article>
+            <article class="entry" data-group="e5"><div class="entry-head"><span class="line-badge">líneas 6–8</span><code class="snippet">$nombre = $_POST["nombre"]; ...</code></div><p class="entry-text">Lee los 3 campos con los valores nuevos que escribió el usuario.</p></article>
+            <article class="entry" data-group="e6"><div class="entry-head"><span class="line-badge">línea 9</span><code class="snippet">mysqli_query(UPDATE ... WHERE id=$id)</code></div><p class="entry-text">Actualiza esa fila específica con los nuevos valores — el <code>WHERE id=$id</code> es lo que evita tocar las demás mascotas.</p></article>
+            <article class="entry" data-group="e7"><div class="entry-head"><span class="line-badge">líneas 10–11</span><code class="snippet">header(...); exit;</code></div><p class="entry-text">Redirige a <code>index.php</code> y detiene el script, igual que en <code>crear.php</code>.</p></article>
+          </div>
+        </section>
+        <section class="group">
+          <h2 class="group-label">Si no hubo POST: mostrar el formulario ya lleno</h2>
+          <div class="entries">
+            <article class="entry" data-group="e8"><div class="entry-head"><span class="line-badge">línea 14</span><code class="snippet">SELECT * FROM mascotas WHERE id=$id</code></div><p class="entry-text">Si el script llegó hasta aquí es porque no hubo POST — o sea, es la primera vez que se abre esta página para esa mascota. Trae su fila actual.</p></article>
+            <article class="entry" data-group="e9"><div class="entry-head"><span class="line-badge">línea 15</span><code class="snippet">$mascota = mysqli_fetch_assoc($resultado);</code></div><p class="entry-text">Guarda esa fila en <code>$mascota</code>, como un array asociativo.</p></article>
+            <article class="entry" data-group="e10"><div class="entry-head"><span class="line-badge">línea 16</span><code class="snippet">?&gt;</code></div><p class="entry-text">Cierra el bloque PHP.</p></article>
+            <article class="entry" data-group="e11"><div class="entry-head"><span class="line-badge">línea 17</span><code class="snippet">&lt;form method="post"&gt;</code></div><p class="entry-text">Formulario que envía por POST, hacia este mismo archivo (<code>editar.php?id=...</code>), para actualizar.</p></article>
+            <article class="entry" data-group="e12"><div class="entry-head"><span class="line-badge">líneas 18–20</span><code class="snippet">&lt;input value="&lt;?php echo $mascota[...]; ?&gt;"&gt;</code></div><p class="entry-text">A diferencia de <code>crear.php</code>, cada campo trae un <code>value</code> con los datos actuales de <code>$mascota</code> — por eso el formulario aparece ya lleno, listo para modificar en vez de escribir todo de nuevo.</p></article>
+            <article class="entry" data-group="e13"><div class="entry-head"><span class="line-badge">línea 21</span><code class="snippet">&lt;button type="submit"&gt;Actualizar&lt;/button&gt;</code></div><p class="entry-text">Botón que envía los cambios.</p></article>
+            <article class="entry" data-group="e14"><div class="entry-head"><span class="line-badge">línea 22</span><code class="snippet">&lt;/form&gt;</code></div><p class="entry-text">Cierra el formulario.</p></article>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- eliminar.php -->
+  <div class="file-section">
+    <h2 class="file-title">eliminar.php <span class="badge get">solo borra</span></h2>
+    <div class="layout">
+      <div class="code-panel">
+        <div class="code-panel-head"><span class="dots"><span></span><span></span><span></span></span>eliminar.php</div>
+        <div class="code">
+          <div class="line" data-group="d1"><span class="ln">1</span><span class="code-text"><span class="tag">&lt;?php</span></span></div>
+          <div class="line" data-group="d2"><span class="ln">2</span><span class="code-text"><span class="var">$conexion</span> = <span class="fn">mysqli_connect</span>(<span class="str">"localhost"</span>, <span class="str">"root"</span>, <span class="str">"baycodec"</span>, <span class="str">"escuela_mascotas"</span>);</span></div>
+          <div class="line" data-group="d3"><span class="ln">3</span><span class="code-text"><span class="var">$id</span> = (int) <span class="var">$_GET</span>[<span class="str">"id"</span>];</span></div>
+          <div class="line" data-group="d4"><span class="ln">4</span><span class="code-text"><span class="fn">mysqli_query</span>(<span class="var">$conexion</span>, <span class="str">"DELETE FROM mascotas WHERE id=</span><span class="var">$id</span><span class="str">"</span>);</span></div>
+          <div class="line" data-group="d5"><span class="ln">5</span><span class="code-text"><span class="fn">header</span>(<span class="str">"Location: index.php"</span>);</span></div>
+        </div>
+      </div>
+      <div class="walkthrough">
+        <section class="group">
+          <h2 class="group-label">Borrar y volver</h2>
+          <div class="entries">
+            <article class="entry" data-group="d1"><div class="entry-head"><span class="line-badge">línea 1</span><code class="snippet">&lt;?php</code></div><p class="entry-text">Abre el bloque PHP.</p></article>
+            <article class="entry" data-group="d2"><div class="entry-head"><span class="line-badge">línea 2</span><code class="snippet">mysqli_connect(...)</code></div><p class="entry-text">Abre su propia conexión, porque este archivo se ejecuta por separado al seguir el enlace "Borrar".</p></article>
+            <article class="entry" data-group="d3"><div class="entry-head"><span class="line-badge">línea 3</span><code class="snippet">$id = (int) $_GET["id"];</code></div><p class="entry-text">Lee el <code>id</code> de la URL y lo fuerza a número entero.</p></article>
+            <article class="entry" data-group="d4"><div class="entry-head"><span class="line-badge">línea 4</span><code class="snippet">mysqli_query(DELETE ...)</code></div><p class="entry-text">Borra la fila con ese <code>id</code>.</p></article>
+            <article class="entry" data-group="d5"><div class="entry-head"><span class="line-badge">línea 5</span><code class="snippet">header("Location: index.php");</code></div><p class="entry-text">Redirige de vuelta a la lista.</p></article>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <div class="tip">
+    <span class="tip-label">Dato relacionado</span>
+    <p><code>editar.php</code> es el único de los cuatro que combina lectura y escritura en un mismo archivo — porque necesita <em>leer</em> los datos actuales para mostrarlos en el formulario antes de que el usuario pueda <em>escribirlos</em> de nuevo. <code>crear.php</code> y <code>eliminar.php</code> no lo necesitan: uno solo escribe, el otro solo borra.</p>
+  </div>
+</div>
+
+<script>
+  (function () {
+    function setActive(g, on) {
+      document.querySelectorAll('[data-group="' + g + '"]')
+        .forEach(function (el) { el.classList.toggle('active', on); });
+    }
+    document.querySelectorAll('[data-group]').forEach(function (el) {
+      var g = el.getAttribute('data-group');
+      el.addEventListener('mouseenter', function () { setActive(g, true); });
+      el.addEventListener('mouseleave', function () { setActive(g, false); });
+    });
+  })();
+</script>

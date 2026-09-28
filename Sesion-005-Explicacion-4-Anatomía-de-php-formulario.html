@@ -1,0 +1,402 @@
+<title>Anatomía de php-formulario</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --bg: #EEF2F4;
+    --surface: #FFFFFF;
+    --surface-2: #E6ECEF;
+    --border: #D2DBE1;
+    --text: #16212B;
+    --text-muted: #5A6B78;
+    --accent: #157A80;
+    --accent-soft: rgba(21,122,128,0.10);
+    --syn-fn: #157A80;
+    --syn-string: #9C4568;
+    --syn-var: #4054B2;
+    --code-line-hover: rgba(21,122,128,0.10);
+    --code-line-active-border: #157A80;
+    --badge-get-bg: rgba(64,84,178,0.12);
+    --badge-get-fg: #4054B2;
+    --badge-post-bg: rgba(156,69,104,0.12);
+    --badge-post-fg: #9C4568;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0F161C;
+      --surface: #151E26;
+      --surface-2: #1A2430;
+      --border: #29343E;
+      --text: #E7EDF0;
+      --text-muted: #93A3AE;
+      --accent: #52D6DA;
+      --accent-soft: rgba(82,214,218,0.14);
+      --syn-fn: #5AD6DA;
+      --syn-string: #E993B6;
+      --syn-var: #93A8FF;
+      --code-line-hover: rgba(82,214,218,0.10);
+      --code-line-active-border: #52D6DA;
+      --badge-get-bg: rgba(147,168,255,0.16);
+      --badge-get-fg: #93A8FF;
+      --badge-post-bg: rgba(233,147,182,0.16);
+      --badge-post-fg: #E993B6;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0F161C;
+    --surface: #151E26;
+    --surface-2: #1A2430;
+    --border: #29343E;
+    --text: #E7EDF0;
+    --text-muted: #93A3AE;
+    --accent: #52D6DA;
+    --accent-soft: rgba(82,214,218,0.14);
+    --syn-fn: #5AD6DA;
+    --syn-string: #E993B6;
+    --syn-var: #93A8FF;
+    --code-line-hover: rgba(82,214,218,0.10);
+    --code-line-active-border: #52D6DA;
+    --badge-get-bg: rgba(147,168,255,0.16);
+    --badge-get-fg: #93A8FF;
+    --badge-post-bg: rgba(233,147,182,0.16);
+    --badge-post-fg: #E993B6;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+    line-height: 1.55;
+  }
+
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 3.5rem 1.5rem 5rem;
+  }
+
+  .header { max-width: 66ch; margin-bottom: 2rem; }
+
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 0.5em;
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--accent); margin: 0 0 0.9rem;
+  }
+
+  h1 {
+    font-weight: 700;
+    font-size: clamp(1.9rem, 1.5rem + 1.6vw, 2.6rem);
+    line-height: 1.15; letter-spacing: -0.01em;
+    margin: 0 0 0.75rem; text-wrap: balance;
+  }
+
+  .subtitle { color: var(--text-muted); font-size: 1.05rem; margin: 0; text-wrap: pretty; }
+
+  .summary {
+    display: flex; gap: 1rem; align-items: flex-start;
+    background: var(--surface); border: 1px solid var(--border);
+    border-left: 3px solid var(--accent); border-radius: 8px;
+    padding: 1.1rem 1.3rem; margin-bottom: 2.5rem; max-width: 82ch;
+  }
+  .summary-label {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 0.72rem;
+    text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent);
+    white-space: nowrap; padding-top: 0.2rem;
+  }
+  .summary p { margin: 0; color: var(--text); font-size: 0.98rem; }
+
+  /* flow diagram */
+  .flow {
+    display: flex; gap: 0; margin-bottom: 3rem; max-width: 100%;
+    overflow-x: auto; padding-bottom: 0.25rem;
+  }
+  .step {
+    position: relative;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 1rem 1.1rem; min-width: 210px; flex: 1 1 210px;
+    display: flex; flex-direction: column; gap: 0.5rem;
+  }
+  .step + .step { margin-left: 1.6rem; }
+  .step::after {
+    content: "→";
+    position: absolute; left: -1.5rem; top: 50%; transform: translateY(-50%);
+    color: var(--text-muted); font-size: 1.1rem;
+  }
+  .step:first-child::after { content: none; }
+  .step-num {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 0.72rem;
+    color: var(--accent);
+  }
+  .step-title { font-weight: 600; font-size: 0.95rem; }
+  .badge {
+    display: inline-block; font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 0.68rem; letter-spacing: 0.04em; padding: 0.05rem 0.5rem;
+    border-radius: 999px; width: fit-content;
+  }
+  .badge.get { background: var(--badge-get-bg); color: var(--badge-get-fg); }
+  .badge.post { background: var(--badge-post-bg); color: var(--badge-post-fg); }
+  .badge.redir { background: var(--surface-2); color: var(--text-muted); }
+  .step p { margin: 0; font-size: 0.85rem; color: var(--text-muted); }
+
+  @media (max-width: 760px) {
+    .flow { flex-direction: column; overflow-x: visible; }
+    .step + .step { margin-left: 0; margin-top: 1.6rem; }
+    .step::after { content: "↓"; left: 50%; top: -1.5rem; transform: translateX(-50%); }
+    .step:first-child::after { content: none; }
+  }
+
+  .file-section { margin-bottom: 3.5rem; }
+  .file-section:last-child { margin-bottom: 0; }
+
+  .file-title {
+    display: flex; align-items: center; gap: 0.6rem;
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 1.05rem; font-weight: 600;
+    margin: 0 0 1.2rem; padding-bottom: 0.6rem; border-bottom: 1px solid var(--border);
+  }
+  .file-title .badge { font-size: 0.7rem; }
+
+  .layout {
+    display: grid; grid-template-columns: minmax(0, 460px) minmax(0, 1fr);
+    gap: 2rem; align-items: start;
+  }
+  @media (max-width: 860px) { .layout { grid-template-columns: 1fr; } }
+
+  .code-panel { background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  @media (min-width: 861px) { .code-panel { position: sticky; top: 2rem; } }
+
+  .code-panel-head {
+    display: flex; align-items: center; gap: 0.5rem;
+    padding: 0.7rem 1rem; border-bottom: 1px solid var(--border);
+    font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 0.8rem; color: var(--text-muted);
+  }
+  .dots { display: inline-flex; gap: 5px; }
+  .dots span { width: 8px; height: 8px; border-radius: 50%; background: var(--border); }
+
+  .code { overflow-x: auto; padding: 0.4rem 0; }
+  .line {
+    display: grid; grid-template-columns: 2.6rem 1fr;
+    font-family: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Consolas, monospace;
+    font-size: 0.84rem; white-space: pre; border-left: 2px solid transparent;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .line { transition: background-color 0.15s ease, border-color 0.15s ease; }
+    .entry { transition: background-color 0.15s ease, border-color 0.15s ease; }
+  }
+  .line.active { background: var(--code-line-hover); border-left-color: var(--code-line-active-border); }
+  .ln {
+    color: var(--text-muted); opacity: 0.5; text-align: right;
+    padding: 0.12rem 0.75rem 0.12rem 0; user-select: none; font-variant-numeric: tabular-nums;
+  }
+  .code-text { padding: 0.12rem 1rem 0.12rem 0; color: var(--text); }
+  .blank .code-text::before { content: "\00a0"; }
+  .tag { color: var(--text-muted); font-weight: 500; }
+  .fn { color: var(--syn-fn); }
+  .str { color: var(--syn-string); }
+  .var { color: var(--syn-var); }
+
+  .walkthrough { display: flex; flex-direction: column; gap: 2.1rem; }
+  .group-label {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 0.75rem;
+    text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted);
+    margin: 0 0 0.9rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border);
+  }
+  .entries { display: flex; flex-direction: column; gap: 0.9rem; }
+  .entry {
+    background: var(--surface); border: 1px solid var(--border);
+    border-left: 2px solid transparent; border-radius: 8px; padding: 0.85rem 1.1rem;
+  }
+  .entry.active { background: var(--accent-soft); border-left-color: var(--accent); }
+  .entry-head { display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.35rem; }
+  .line-badge {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 0.72rem; color: var(--accent);
+    border: 1px solid var(--border); border-radius: 999px; padding: 0.05rem 0.55rem; flex-shrink: 0;
+  }
+  .snippet {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 0.82rem; color: var(--text);
+    background: var(--surface-2); padding: 0.1rem 0.45rem; border-radius: 4px; word-break: break-word;
+  }
+  .entry-text { margin: 0; color: var(--text-muted); font-size: 0.95rem; }
+
+  .tip {
+    margin-top: 2.6rem; max-width: 82ch; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 1.1rem 1.3rem; display: flex; gap: 1rem;
+  }
+  .tip-label {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 0.72rem;
+    text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted);
+    white-space: nowrap; padding-top: 0.2rem;
+  }
+  .tip p { margin: 0; font-size: 0.93rem; color: var(--text); }
+
+  .summary p code, .entry-text code, .tip p code {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 0.88em;
+    background: var(--surface-2); padding: 0.05rem 0.35rem; border-radius: 4px; color: var(--text);
+  }
+</style>
+
+<div class="page">
+  <div class="header">
+    <p class="eyebrow">PHP + MySQLi · 4-php-formulario</p>
+    <h1>Anatomía de php-formulario</h1>
+    <p class="subtitle">Dos archivos para una sola tarea compartida: <code>formulario.php</code> guarda y lista, <code>eliminar.php</code> solo borra. Por qué no viven en el mismo archivo, y qué hace cada línea de cada uno.</p>
+  </div>
+
+  <div class="summary">
+    <span class="summary-label">Por qué separados</span>
+    <p><code>eliminar.php</code> existe aparte porque el enlace "Borrar" es un simple <code>&lt;a href&gt;</code>, y un enlace solo puede hacer una petición <strong>GET</strong> — nunca puede enviar el formulario <strong>POST</strong> de <code>formulario.php</code>. Separarlo evita mezclar tres casos (ver la página, insertar, borrar) en un mismo archivo: cada uno hace una sola cosa y sabe exactamente a dónde volver.</p>
+  </div>
+
+  <div class="flow">
+    <div class="step">
+      <span class="step-num">1</span>
+      <span class="step-title">Abrir formulario.php</span>
+      <span class="badge get">GET</span>
+      <p>Se ve el formulario vacío y la lista de mascotas ya guardadas.</p>
+    </div>
+    <div class="step">
+      <span class="step-num">2</span>
+      <span class="step-title">Enviar el formulario</span>
+      <span class="badge post">POST</span>
+      <p>formulario.php inserta la fila nueva y vuelve a mostrarse con la lista actualizada.</p>
+    </div>
+    <div class="step">
+      <span class="step-num">3</span>
+      <span class="step-title">Clic en "Borrar"</span>
+      <span class="badge get">GET ?id=</span>
+      <p>El enlace lleva a eliminar.php — un enlace nunca puede enviar un POST.</p>
+    </div>
+    <div class="step">
+      <span class="step-num">4</span>
+      <span class="step-title">eliminar.php actúa</span>
+      <span class="badge redir">redirige</span>
+      <p>Borra la fila y hace header() para volver al paso 1.</p>
+    </div>
+  </div>
+
+  <div class="file-section">
+    <h2 class="file-title">formulario.php <span class="badge post">crea</span><span class="badge get" style="margin-left:-0.3rem">lista</span></h2>
+    <div class="layout">
+      <div class="code-panel">
+        <div class="code-panel-head"><span class="dots"><span></span><span></span><span></span></span>formulario.php</div>
+        <div class="code">
+          <div class="line" data-group="f1"><span class="ln">1</span><span class="code-text"><span class="tag">&lt;?php</span></span></div>
+          <div class="line" data-group="f2"><span class="ln">2</span><span class="code-text"><span class="var">$conexion</span> = <span class="fn">mysqli_connect</span>(<span class="str">"localhost"</span>, <span class="str">"root"</span>, <span class="str">"baycodec"</span>, <span class="str">"escuela_mascotas"</span>);</span></div>
+          <div class="line blank"><span class="ln">3</span><span class="code-text"></span></div>
+          <div class="line" data-group="f3"><span class="ln">4</span><span class="code-text"><span class="fn">if</span> (<span class="var">$_SERVER</span>[<span class="str">"REQUEST_METHOD"</span>] == <span class="str">"POST"</span>) {</span></div>
+          <div class="line" data-group="f4"><span class="ln">5</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;<span class="var">$nombre</span>&nbsp; = <span class="fn">mysqli_real_escape_string</span>(<span class="var">$conexion</span>, <span class="var">$_POST</span>[<span class="str">"nombre"</span>]);</span></div>
+          <div class="line" data-group="f4"><span class="ln">6</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;<span class="var">$edad</span>&nbsp;&nbsp;&nbsp; = (int) <span class="var">$_POST</span>[<span class="str">"edad"</span>];</span></div>
+          <div class="line" data-group="f4"><span class="ln">7</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;<span class="var">$mascota</span> = <span class="fn">mysqli_real_escape_string</span>(<span class="var">$conexion</span>, <span class="var">$_POST</span>[<span class="str">"mascota"</span>]);</span></div>
+          <div class="line" data-group="f4"><span class="ln">8</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;<span class="var">$color</span>&nbsp;&nbsp; = <span class="fn">mysqli_real_escape_string</span>(<span class="var">$conexion</span>, <span class="var">$_POST</span>[<span class="str">"color"</span>]);</span></div>
+          <div class="line" data-group="f5"><span class="ln">9</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;<span class="fn">mysqli_query</span>(<span class="var">$conexion</span>, <span class="str">"INSERT INTO registro_mascotas (nombre, edad, mascota, color) VALUES ('</span><span class="var">$nombre</span><span class="str">', </span><span class="var">$edad</span><span class="str">, '</span><span class="var">$mascota</span><span class="str">', '</span><span class="var">$color</span><span class="str">')"</span>);</span></div>
+          <div class="line" data-group="f3"><span class="ln">10</span><span class="code-text">}</span></div>
+          <div class="line" data-group="f6"><span class="ln">11</span><span class="code-text"><span class="tag">?&gt;</span></span></div>
+          <div class="line blank"><span class="ln">12</span><span class="code-text"></span></div>
+          <div class="line" data-group="f7"><span class="ln">13</span><span class="code-text">&lt;form method="post"&gt;</span></div>
+          <div class="line" data-group="f8"><span class="ln">14</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;Nombre: &lt;input name="nombre"&gt;&lt;br&gt;</span></div>
+          <div class="line" data-group="f8"><span class="ln">15</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;Edad: &lt;input name="edad" type="number"&gt;&lt;br&gt;</span></div>
+          <div class="line" data-group="f8"><span class="ln">16</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;Mascota: &lt;input name="mascota"&gt;&lt;br&gt;</span></div>
+          <div class="line" data-group="f8"><span class="ln">17</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;Color: &lt;input name="color"&gt;&lt;br&gt;</span></div>
+          <div class="line" data-group="f9"><span class="ln">18</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;&lt;button type="submit"&gt;Guardar&lt;/button&gt;</span></div>
+          <div class="line" data-group="f10"><span class="ln">19</span><span class="code-text">&lt;/form&gt;</span></div>
+          <div class="line blank"><span class="ln">20</span><span class="code-text"></span></div>
+          <div class="line" data-group="f11"><span class="ln">21</span><span class="code-text">&lt;h3&gt;Registros guardados:&lt;/h3&gt;</span></div>
+          <div class="line" data-group="f12"><span class="ln">22</span><span class="code-text"><span class="tag">&lt;?php</span></span></div>
+          <div class="line" data-group="f13"><span class="ln">23</span><span class="code-text"><span class="var">$resultado</span> = <span class="fn">mysqli_query</span>(<span class="var">$conexion</span>, <span class="str">"SELECT * FROM registro_mascotas"</span>);</span></div>
+          <div class="line" data-group="f14"><span class="ln">24</span><span class="code-text"><span class="fn">while</span> (<span class="var">$fila</span> = <span class="fn">mysqli_fetch_assoc</span>(<span class="var">$resultado</span>)) {</span></div>
+          <div class="line" data-group="f15"><span class="ln">25</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;<span class="fn">echo</span> <span class="var">$fila</span>[<span class="str">"nombre"</span>] . <span class="str">" - "</span> . <span class="var">$fila</span>[<span class="str">"edad"</span>] . <span class="str">" años - "</span> . <span class="var">$fila</span>[<span class="str">"mascota"</span>] . <span class="str">" - "</span> . <span class="var">$fila</span>[<span class="str">"color"</span>];</span></div>
+          <div class="line" data-group="f16"><span class="ln">26</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;<span class="fn">echo</span> <span class="str">" &lt;a href='eliminar.php?id="</span> . <span class="var">$fila</span>[<span class="str">"id"</span>] . <span class="str">"'&gt;Borrar&lt;/a&gt;&lt;br&gt;"</span>;</span></div>
+          <div class="line" data-group="f14"><span class="ln">27</span><span class="code-text">}</span></div>
+          <div class="line" data-group="f17"><span class="ln">28</span><span class="code-text"><span class="tag">?&gt;</span></span></div>
+        </div>
+      </div>
+
+      <div class="walkthrough">
+        <section class="group">
+          <h2 class="group-label">Conectar y guardar (solo si llega un POST)</h2>
+          <div class="entries">
+            <article class="entry" data-group="f1"><div class="entry-head"><span class="line-badge">línea 1</span><code class="snippet">&lt;?php</code></div><p class="entry-text">Abre el bloque de código PHP.</p></article>
+            <article class="entry" data-group="f2"><div class="entry-head"><span class="line-badge">línea 2</span><code class="snippet">mysqli_connect(...)</code></div><p class="entry-text">Conecta con la base de datos. El resultado se reutiliza en todo el resto del archivo.</p></article>
+            <article class="entry" data-group="f3"><div class="entry-head"><span class="line-badge">líneas 4 y 10</span><code class="snippet">if (...) { ... }</code></div><p class="entry-text">Todo lo que hay entre estas dos líneas solo se ejecuta si el formulario fue enviado por POST. En la primera carga de la página, sin enviar nada, este bloque entero se salta.</p></article>
+            <article class="entry" data-group="f4"><div class="entry-head"><span class="line-badge">líneas 5–8</span><code class="snippet">$nombre = mysqli_real_escape_string(...)</code></div><p class="entry-text">Lee los 4 campos del formulario. <code>nombre</code>, <code>mascota</code> y <code>color</code> se limpian con <code>mysqli_real_escape_string()</code> para evitar inyección SQL; <code>edad</code> se fuerza a número entero con <code>(int)</code>.</p></article>
+            <article class="entry" data-group="f5"><div class="entry-head"><span class="line-badge">línea 9</span><code class="snippet">mysqli_query(INSERT ...)</code></div><p class="entry-text">Guarda la nueva mascota en la tabla <code>registro_mascotas</code>, ya con los valores limpios.</p></article>
+            <article class="entry" data-group="f6"><div class="entry-head"><span class="line-badge">línea 11</span><code class="snippet">?&gt;</code></div><p class="entry-text">Cierra el bloque PHP para escribir el HTML del formulario directamente.</p></article>
+          </div>
+        </section>
+
+        <section class="group">
+          <h2 class="group-label">El formulario HTML</h2>
+          <div class="entries">
+            <article class="entry" data-group="f7"><div class="entry-head"><span class="line-badge">línea 13</span><code class="snippet">&lt;form method="post"&gt;</code></div><p class="entry-text">Envía los datos por POST: a diferencia del buscador (GET), aquí no conviene que los valores queden visibles en la URL, porque van a insertarse en la base de datos.</p></article>
+            <article class="entry" data-group="f8"><div class="entry-head"><span class="line-badge">líneas 14–17</span><code class="snippet">&lt;input name="nombre"&gt; ...</code></div><p class="entry-text">Los 4 campos de entrada. Cada <code>name=</code> es la clave exacta que luego se lee en <code>$_POST</code> — por ejemplo, <code>name="nombre"</code> ↔ <code>$_POST["nombre"]</code>.</p></article>
+            <article class="entry" data-group="f9"><div class="entry-head"><span class="line-badge">línea 18</span><code class="snippet">&lt;button type="submit"&gt;</code></div><p class="entry-text">Envía el formulario al hacer clic.</p></article>
+            <article class="entry" data-group="f10"><div class="entry-head"><span class="line-badge">línea 19</span><code class="snippet">&lt;/form&gt;</code></div><p class="entry-text">Cierra el formulario.</p></article>
+          </div>
+        </section>
+
+        <section class="group">
+          <h2 class="group-label">Listar los registros guardados</h2>
+          <div class="entries">
+            <article class="entry" data-group="f11"><div class="entry-head"><span class="line-badge">línea 21</span><code class="snippet">&lt;h3&gt;Registros guardados:&lt;/h3&gt;</code></div><p class="entry-text">Título fijo de la lista, siempre visible.</p></article>
+            <article class="entry" data-group="f12"><div class="entry-head"><span class="line-badge">línea 22</span><code class="snippet">&lt;?php</code></div><p class="entry-text">Vuelve al modo PHP.</p></article>
+            <article class="entry" data-group="f13"><div class="entry-head"><span class="line-badge">línea 23</span><code class="snippet">mysqli_query(SELECT ...)</code></div><p class="entry-text">Trae todas las filas de <code>registro_mascotas</code>.</p></article>
+            <article class="entry" data-group="f14"><div class="entry-head"><span class="line-badge">líneas 24 y 27</span><code class="snippet">while (...) { ... }</code></div><p class="entry-text">Recorre el resultado fila por fila, igual que en <code>buscar.php</code>.</p></article>
+            <article class="entry" data-group="f15"><div class="entry-head"><span class="line-badge">línea 25</span><code class="snippet">echo $fila["nombre"] . ...</code></div><p class="entry-text">Imprime los datos de cada mascota guardada: nombre, edad, tipo de mascota y color.</p></article>
+            <article class="entry" data-group="f16"><div class="entry-head"><span class="line-badge">línea 26</span><code class="snippet">echo " &lt;a href='eliminar.php?id=...</code></div><p class="entry-text">Arma, por cada fila, un enlace que apunta a <code>eliminar.php</code> pasando el <code>id</code> como parámetro en la URL. Este enlace es el único punto de contacto entre los dos archivos.</p></article>
+            <article class="entry" data-group="f17"><div class="entry-head"><span class="line-badge">línea 28</span><code class="snippet">?&gt;</code></div><p class="entry-text">Cierra el bloque PHP.</p></article>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <div class="file-section">
+    <h2 class="file-title">eliminar.php <span class="badge get">solo borra</span></h2>
+    <div class="layout">
+      <div class="code-panel">
+        <div class="code-panel-head"><span class="dots"><span></span><span></span><span></span></span>eliminar.php</div>
+        <div class="code">
+          <div class="line" data-group="e1"><span class="ln">1</span><span class="code-text"><span class="tag">&lt;?php</span></span></div>
+          <div class="line" data-group="e2"><span class="ln">2</span><span class="code-text"><span class="var">$conexion</span> = <span class="fn">mysqli_connect</span>(<span class="str">"localhost"</span>, <span class="str">"root"</span>, <span class="str">"baycodec"</span>, <span class="str">"escuela_mascotas"</span>);</span></div>
+          <div class="line" data-group="e3"><span class="ln">3</span><span class="code-text"><span class="var">$id</span> = (int) <span class="var">$_GET</span>[<span class="str">"id"</span>];</span></div>
+          <div class="line" data-group="e4"><span class="ln">4</span><span class="code-text"><span class="fn">mysqli_query</span>(<span class="var">$conexion</span>, <span class="str">"DELETE FROM registro_mascotas WHERE id=</span><span class="var">$id</span><span class="str">"</span>);</span></div>
+          <div class="line" data-group="e5"><span class="ln">5</span><span class="code-text"><span class="fn">header</span>(<span class="str">"Location: formulario.php"</span>);</span></div>
+        </div>
+      </div>
+
+      <div class="walkthrough">
+        <section class="group">
+          <h2 class="group-label">Borrar y volver</h2>
+          <div class="entries">
+            <article class="entry" data-group="e1"><div class="entry-head"><span class="line-badge">línea 1</span><code class="snippet">&lt;?php</code></div><p class="entry-text">Abre el bloque de código PHP.</p></article>
+            <article class="entry" data-group="e2"><div class="entry-head"><span class="line-badge">línea 2</span><code class="snippet">mysqli_connect(...)</code></div><p class="entry-text">Abre su propia conexión: este archivo se ejecuta por separado cuando el navegador sigue el enlace, así que necesita conectarse de nuevo a la base de datos.</p></article>
+            <article class="entry" data-group="e3"><div class="entry-head"><span class="line-badge">línea 3</span><code class="snippet">$id = (int) $_GET["id"];</code></div><p class="entry-text">Lee el <code>id</code> que viene en la URL (<code>?id=7</code>) y lo convierte a número entero — la forma más simple de evitar que alguien meta texto SQL en este parámetro.</p></article>
+            <article class="entry" data-group="e4"><div class="entry-head"><span class="line-badge">línea 4</span><code class="snippet">mysqli_query(DELETE ...)</code></div><p class="entry-text">Borra la fila con ese <code>id</code>.</p></article>
+            <article class="entry" data-group="e5"><div class="entry-head"><span class="line-badge">línea 5</span><code class="snippet">header("Location: formulario.php");</code></div><p class="entry-text">Redirige de vuelta a <code>formulario.php</code> en lugar de mostrar una página en blanco. El usuario nunca ve realmente esta página; solo pasa por ella.</p></article>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <div class="tip">
+    <span class="tip-label">Dato relacionado</span>
+    <p>Si <code>eliminar.php</code> estuviera mezclado dentro de <code>formulario.php</code>, cada carga de la página tendría que distinguir tres casos con un solo <code>if</code>: "¿vengo a ver la página?", "¿vengo a insertar?" y "¿vengo a borrar?". Separarlo en dos archivos convierte eso en dos responsabilidades simples, cada una en su propio lugar.</p>
+  </div>
+</div>
+
+<script>
+  (function () {
+    function setActive(g, on) {
+      document.querySelectorAll('[data-group="' + g + '"]')
+        .forEach(function (el) { el.classList.toggle('active', on); });
+    }
+    document.querySelectorAll('[data-group]').forEach(function (el) {
+      var g = el.getAttribute('data-group');
+      el.addEventListener('mouseenter', function () { setActive(g, true); });
+      el.addEventListener('mouseleave', function () { setActive(g, false); });
+    });
+  })();
+</script>

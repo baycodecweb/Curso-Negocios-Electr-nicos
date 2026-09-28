@@ -1,0 +1,232 @@
+<title>Anatomía de info-php</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --bg: #EEF2F4;
+    --surface: #FFFFFF;
+    --surface-2: #E6ECEF;
+    --border: #D2DBE1;
+    --text: #16212B;
+    --text-muted: #5A6B78;
+    --accent: #157A80;
+    --accent-soft: rgba(21,122,128,0.10);
+    --syn-fn: #157A80;
+    --syn-string: #9C4568;
+    --syn-var: #4054B2;
+    --code-line-hover: rgba(21,122,128,0.10);
+    --code-line-active-border: #157A80;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0F161C;
+      --surface: #151E26;
+      --surface-2: #1A2430;
+      --border: #29343E;
+      --text: #E7EDF0;
+      --text-muted: #93A3AE;
+      --accent: #52D6DA;
+      --accent-soft: rgba(82,214,218,0.14);
+      --syn-fn: #5AD6DA;
+      --syn-string: #E993B6;
+      --syn-var: #93A8FF;
+      --code-line-hover: rgba(82,214,218,0.10);
+      --code-line-active-border: #52D6DA;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0F161C;
+    --surface: #151E26;
+    --surface-2: #1A2430;
+    --border: #29343E;
+    --text: #E7EDF0;
+    --text-muted: #93A3AE;
+    --accent: #52D6DA;
+    --accent-soft: rgba(82,214,218,0.14);
+    --syn-fn: #5AD6DA;
+    --syn-string: #E993B6;
+    --syn-var: #93A8FF;
+    --code-line-hover: rgba(82,214,218,0.10);
+    --code-line-active-border: #52D6DA;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+    line-height: 1.55;
+  }
+
+  .page { max-width: 900px; margin: 0 auto; padding: 3.5rem 1.5rem 5rem; }
+
+  .header { max-width: 62ch; margin-bottom: 2rem; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 0.5em;
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--accent); margin: 0 0 0.9rem;
+  }
+  h1 {
+    font-weight: 700; font-size: clamp(1.9rem, 1.5rem + 1.6vw, 2.6rem);
+    line-height: 1.15; letter-spacing: -0.01em; margin: 0 0 0.75rem; text-wrap: balance;
+  }
+  .subtitle { color: var(--text-muted); font-size: 1.05rem; margin: 0; text-wrap: pretty; }
+
+  .summary {
+    display: flex; gap: 1rem; align-items: flex-start;
+    background: var(--surface); border: 1px solid var(--border);
+    border-left: 3px solid var(--accent); border-radius: 8px;
+    padding: 1.1rem 1.3rem; margin-bottom: 2.5rem; max-width: 82ch;
+  }
+  .summary-label {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 0.72rem;
+    text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent);
+    white-space: nowrap; padding-top: 0.2rem;
+  }
+  .summary p { margin: 0; color: var(--text); font-size: 0.98rem; }
+
+  .code-panel { background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 2rem; }
+  .code-panel-head {
+    display: flex; align-items: center; gap: 0.5rem; padding: 0.7rem 1rem;
+    border-bottom: 1px solid var(--border); font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 0.8rem; color: var(--text-muted);
+  }
+  .dots { display: inline-flex; gap: 5px; }
+  .dots span { width: 8px; height: 8px; border-radius: 50%; background: var(--border); }
+  .code { overflow-x: auto; padding: 0.6rem 0; }
+  .line {
+    display: grid; grid-template-columns: 2.6rem 1fr;
+    font-family: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Consolas, monospace;
+    font-size: 1rem; white-space: pre; border-left: 2px solid transparent;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .line { transition: background-color 0.15s ease, border-color 0.15s ease; }
+    .entry { transition: background-color 0.15s ease, border-color 0.15s ease; }
+    .tok { transition: background-color 0.15s ease, box-shadow 0.15s ease; }
+  }
+  .line.active { background: var(--code-line-hover); border-left-color: var(--code-line-active-border); }
+  .tok { border-radius: 4px; padding: 0.05rem 0.15rem; margin: 0 -0.15rem; }
+  .tok.active { background: var(--code-line-hover); box-shadow: 0 0 0 1px var(--code-line-active-border); }
+  .ln {
+    color: var(--text-muted); opacity: 0.5; text-align: right;
+    padding: 0.15rem 0.75rem 0.15rem 0; user-select: none; font-variant-numeric: tabular-nums;
+  }
+  .code-text { padding: 0.15rem 1rem 0.15rem 0; color: var(--text); }
+  .tag { color: var(--text-muted); font-weight: 500; }
+  .fn { color: var(--syn-fn); }
+
+  .walkthrough { display: flex; flex-direction: column; gap: 0.9rem; margin-bottom: 3rem; }
+  .entry {
+    background: var(--surface); border: 1px solid var(--border);
+    border-left: 2px solid transparent; border-radius: 8px; padding: 0.85rem 1.1rem;
+  }
+  .entry.active { background: var(--accent-soft); border-left-color: var(--accent); }
+  .entry-head { display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.35rem; }
+  .line-badge {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 0.72rem; color: var(--accent);
+    border: 1px solid var(--border); border-radius: 999px; padding: 0.05rem 0.55rem; flex-shrink: 0;
+  }
+  .snippet {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 0.82rem; color: var(--text);
+    background: var(--surface-2); padding: 0.1rem 0.45rem; border-radius: 4px; word-break: break-word;
+  }
+  .entry-text { margin: 0; color: var(--text-muted); font-size: 0.95rem; }
+
+  .section-label {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 0.75rem;
+    text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted);
+    margin: 0 0 0.9rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border);
+  }
+
+  .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.9rem; margin-bottom: 3rem; }
+  @media (max-width: 600px) { .info-grid { grid-template-columns: 1fr; } }
+  .info-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 1rem 1.1rem;
+  }
+  .info-card h3 { margin: 0 0 0.35rem; font-size: 0.95rem; font-weight: 600; }
+  .info-card p { margin: 0; font-size: 0.87rem; color: var(--text-muted); }
+  .info-card.highlight { border-color: var(--accent); background: var(--accent-soft); }
+
+  .tip {
+    max-width: 82ch; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 1.1rem 1.3rem; display: flex; gap: 1rem;
+  }
+  .tip-label {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 0.72rem;
+    text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted);
+    white-space: nowrap; padding-top: 0.2rem;
+  }
+  .tip p { margin: 0; font-size: 0.93rem; color: var(--text); }
+
+  .summary p code, .entry-text code, .tip p code, .info-card p code {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 0.88em;
+    background: var(--surface-2); padding: 0.05rem 0.35rem; border-radius: 4px; color: var(--text);
+  }
+</style>
+
+<div class="page">
+  <div class="header">
+    <p class="eyebrow">PHP · 0-info-php/index.php</p>
+    <h1>Anatomía de info-php</h1>
+    <p class="subtitle">El archivo más corto de toda la serie: una sola línea. Su trabajo no es enseñar una técnica, sino confirmar que PHP está instalado y listo antes de empezar con lo demás.</p>
+  </div>
+
+  <div class="summary">
+    <span class="summary-label">En resumen</span>
+    <p>Llama a <code>phpinfo()</code>, una función que ya viene con PHP y que imprime toda la configuración del servidor: versión, extensiones cargadas, límites, variables de entorno. Es el equivalente a "encender el motor y mirar el tablero" antes de manejar.</p>
+  </div>
+
+  <div class="code-panel">
+    <div class="code-panel-head"><span class="dots"><span></span><span></span><span></span></span>index.php</div>
+    <div class="code">
+      <div class="line"><span class="ln">1</span><span class="code-text"><span class="tag tok" data-group="1a">&lt;?php</span> <span class="fn tok" data-group="1b">phpinfo</span><span class="tok" data-group="1b">();</span> <span class="tag tok" data-group="1c">?&gt;</span></span></div>
+    </div>
+  </div>
+
+  <div class="walkthrough">
+    <article class="entry" data-group="1a"><div class="entry-head"><span class="line-badge">&lt;?php</span></div><p class="entry-text">Abre el bloque de código PHP — igual que en cualquier otro archivo de la serie.</p></article>
+    <article class="entry" data-group="1b"><div class="entry-head"><span class="line-badge">phpinfo();</span></div><p class="entry-text">Llama a la función <code>phpinfo()</code>. No recibe nada ni hay que definirla: viene incluida en PHP y, al ejecutarse, escribe directamente en la página una tabla enorme con toda la información del servidor.</p></article>
+    <article class="entry" data-group="1c"><div class="entry-head"><span class="line-badge">?&gt;</span></div><p class="entry-text">Cierra el bloque PHP. Como no hay nada más en el archivo, aquí termina.</p></article>
+  </div>
+
+  <h2 class="section-label">Qué vas a ver en la página</h2>
+  <div class="info-grid">
+    <div class="info-card">
+      <h3>Versión de PHP</h3>
+      <p>El número de versión instalada (por ejemplo, 8.4) y detalles del sistema operativo que la ejecuta.</p>
+    </div>
+    <div class="info-card highlight">
+      <h3>Extensiones cargadas</h3>
+      <p>Busca <code>mysqli</code> en la página: si aparece, tu PHP puede conectarse a MySQL — justo lo que usan los ejercicios 2 al 5.</p>
+    </div>
+    <div class="info-card">
+      <h3>Configuración (php.ini)</h3>
+      <p>Límites como el tamaño máximo de subida de archivos o el tiempo máximo de ejecución de un script.</p>
+    </div>
+    <div class="info-card">
+      <h3>Variables del servidor</h3>
+      <p>Rutas, variables de entorno y datos de la petición HTTP actual.</p>
+    </div>
+  </div>
+
+  <div class="tip">
+    <span class="tip-label">Dato relacionado</span>
+    <p><code>phpinfo()</code> es útil en local para diagnosticar problemas, pero expone información sensible del servidor (rutas, versiones, variables de entorno). En un proyecto real, nunca se deja accesible desde el navegador en producción.</p>
+  </div>
+</div>
+
+<script>
+  (function () {
+    function setActive(g, on) {
+      document.querySelectorAll('[data-group="' + g + '"]')
+        .forEach(function (el) { el.classList.toggle('active', on); });
+    }
+    document.querySelectorAll('[data-group]').forEach(function (el) {
+      var g = el.getAttribute('data-group');
+      el.addEventListener('mouseenter', function () { setActive(g, true); });
+      el.addEventListener('mouseleave', function () { setActive(g, false); });
+    });
+  })();
+</script>

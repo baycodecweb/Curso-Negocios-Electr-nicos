@@ -1,0 +1,472 @@
+<title>Anatomía de buscar.php</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --bg: #EEF2F4;
+    --surface: #FFFFFF;
+    --surface-2: #E6ECEF;
+    --border: #D2DBE1;
+    --text: #16212B;
+    --text-muted: #5A6B78;
+    --accent: #157A80;
+    --accent-soft: rgba(21,122,128,0.10);
+    --syn-fn: #157A80;
+    --syn-string: #9C4568;
+    --syn-var: #4054B2;
+    --code-line-hover: rgba(21,122,128,0.10);
+    --code-line-active-border: #157A80;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0F161C;
+      --surface: #151E26;
+      --surface-2: #1A2430;
+      --border: #29343E;
+      --text: #E7EDF0;
+      --text-muted: #93A3AE;
+      --accent: #52D6DA;
+      --accent-soft: rgba(82,214,218,0.14);
+      --syn-fn: #5AD6DA;
+      --syn-string: #E993B6;
+      --syn-var: #93A8FF;
+      --code-line-hover: rgba(82,214,218,0.10);
+      --code-line-active-border: #52D6DA;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0F161C;
+    --surface: #151E26;
+    --surface-2: #1A2430;
+    --border: #29343E;
+    --text: #E7EDF0;
+    --text-muted: #93A3AE;
+    --accent: #52D6DA;
+    --accent-soft: rgba(82,214,218,0.14);
+    --syn-fn: #5AD6DA;
+    --syn-string: #E993B6;
+    --syn-var: #93A8FF;
+    --code-line-hover: rgba(82,214,218,0.10);
+    --code-line-active-border: #52D6DA;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+    line-height: 1.55;
+  }
+
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 3.5rem 1.5rem 5rem;
+  }
+
+  .header {
+    max-width: 62ch;
+    margin-bottom: 2rem;
+  }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5em;
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 0.9rem;
+  }
+
+  h1 {
+    font-family: 'IBM Plex Sans', ui-sans-serif, sans-serif;
+    font-weight: 700;
+    font-size: clamp(1.9rem, 1.5rem + 1.6vw, 2.6rem);
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    margin: 0 0 0.75rem;
+    text-wrap: balance;
+  }
+
+  .subtitle {
+    color: var(--text-muted);
+    font-size: 1.05rem;
+    margin: 0;
+    text-wrap: pretty;
+  }
+
+  .summary {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 1.1rem 1.3rem;
+    margin-bottom: 2.5rem;
+    max-width: 82ch;
+  }
+
+  .summary-label {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    white-space: nowrap;
+    padding-top: 0.2rem;
+  }
+
+  .summary p {
+    margin: 0;
+    color: var(--text);
+    font-size: 0.98rem;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 480px) minmax(0, 1fr);
+    gap: 2rem;
+    align-items: start;
+  }
+
+  @media (max-width: 860px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+
+  .code-panel {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  @media (min-width: 861px) {
+    .code-panel { position: sticky; top: 2rem; }
+  }
+
+  .code-panel-head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid var(--border);
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+
+  .dots {
+    display: inline-flex;
+    gap: 5px;
+  }
+  .dots span {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--border);
+  }
+
+  .code {
+    overflow-x: auto;
+    padding: 0.4rem 0;
+  }
+
+  .line {
+    display: grid;
+    grid-template-columns: 2.6rem 1fr;
+    font-family: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Consolas, monospace;
+    font-size: 0.86rem;
+    white-space: pre;
+    border-left: 2px solid transparent;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .line { transition: background-color 0.15s ease, border-color 0.15s ease; }
+    .entry { transition: background-color 0.15s ease, border-color 0.15s ease; }
+  }
+
+  .line.active {
+    background: var(--code-line-hover);
+    border-left-color: var(--code-line-active-border);
+  }
+
+  .ln {
+    color: var(--text-muted);
+    opacity: 0.55;
+    text-align: right;
+    padding: 0.15rem 0.75rem 0.15rem 0;
+    user-select: none;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .code-text { padding: 0.15rem 1rem 0.15rem 0; color: var(--text); }
+  .blank .code-text::before { content: "\00a0"; }
+
+  .tag { color: var(--text-muted); font-weight: 500; }
+  .fn { color: var(--syn-fn); }
+  .str { color: var(--syn-string); }
+  .var { color: var(--syn-var); }
+
+  .walkthrough {
+    display: flex;
+    flex-direction: column;
+    gap: 2.1rem;
+  }
+
+  .group-label {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin: 0 0 0.9rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .entries {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+  }
+
+  .entry {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 2px solid transparent;
+    border-radius: 8px;
+    padding: 0.85rem 1.1rem;
+  }
+
+  .entry.active {
+    background: var(--accent-soft);
+    border-left-color: var(--accent);
+  }
+
+  .entry-head {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.35rem;
+  }
+
+  .line-badge {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 0.72rem;
+    color: var(--accent);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 0.05rem 0.55rem;
+    flex-shrink: 0;
+  }
+
+  .snippet {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 0.82rem;
+    color: var(--text);
+    background: var(--surface-2);
+    padding: 0.1rem 0.45rem;
+    border-radius: 4px;
+    word-break: break-word;
+  }
+
+  .entry-text {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+  }
+
+  .tip {
+    margin-top: 2.6rem;
+    max-width: 82ch;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.1rem 1.3rem;
+    display: flex;
+    gap: 1rem;
+  }
+
+  .tip-label {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    white-space: nowrap;
+    padding-top: 0.2rem;
+  }
+
+  .tip p { margin: 0; font-size: 0.93rem; color: var(--text); }
+
+  .summary p code,
+  .entry-text code,
+  .tip code {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 0.88em;
+    background: var(--surface-2);
+    padding: 0.05rem 0.35rem;
+    border-radius: 4px;
+    color: var(--text);
+  }
+</style>
+
+<div class="page">
+  <div class="header">
+    <p class="eyebrow">PHP + MySQLi · 3-busqueda-php/buscar.php</p>
+    <h1>Anatomía de buscar.php</h1>
+    <p class="subtitle">Diecisiete líneas hacen todo el trabajo: conectar, leer lo que escribió el usuario, armar una consulta segura y mostrar el resultado. Aquí está cada una, explicada por separado.</p>
+  </div>
+
+  <div class="summary">
+    <span class="summary-label">En resumen</span>
+    <p>El script conecta a <code>escuela_mascotas</code>, toma el texto del formulario, lo limpia y arma una búsqueda con <code>LIKE</code> que encuentra mascotas cuyo nombre contenga ese texto en cualquier parte — incluida la búsqueda vacía, que trae todas.</p>
+  </div>
+
+  <div class="layout">
+    <div class="code-panel">
+      <div class="code-panel-head">
+        <span class="dots"><span></span><span></span><span></span></span>
+        buscar.php
+      </div>
+      <div class="code" id="code">
+        <div class="line" data-line="1"><span class="ln">1</span><span class="code-text"><span class="tag">&lt;?php</span></span></div>
+        <div class="line" data-line="2"><span class="ln">2</span><span class="code-text"><span class="var">$conexion</span> = <span class="fn">mysqli_connect</span>(<span class="str">"localhost"</span>, <span class="str">"root"</span>, <span class="str">"baycodec"</span>, <span class="str">"escuela_mascotas"</span>);</span></div>
+        <div class="line" data-line="3"><span class="ln">3</span><span class="code-text"><span class="var">$buscar</span> = <span class="var">$_GET</span>[<span class="str">"buscar"</span>] ?? <span class="str">""</span>;</span></div>
+        <div class="line" data-line="4"><span class="ln">4</span><span class="code-text"><span class="var">$buscar_escapado</span> = <span class="fn">mysqli_real_escape_string</span>(<span class="var">$conexion</span>, <span class="var">$buscar</span>);</span></div>
+        <div class="line" data-line="5"><span class="ln">5</span><span class="code-text"><span class="var">$resultado</span> = <span class="fn">mysqli_query</span>(<span class="var">$conexion</span>, <span class="str">"SELECT * FROM mascotas WHERE nombre LIKE '%</span><span class="var">$buscar_escapado</span><span class="str">%'"</span>);</span></div>
+        <div class="line" data-line="6"><span class="ln">6</span><span class="code-text"><span class="tag">?&gt;</span></span></div>
+        <div class="line blank" data-line="7"><span class="ln">7</span><span class="code-text"></span></div>
+        <div class="line" data-line="8"><span class="ln">8</span><span class="code-text">&lt;form method="get"&gt;</span></div>
+        <div class="line" data-line="9"><span class="ln">9</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;Buscar por nombre: &lt;input name="buscar"&gt;</span></div>
+        <div class="line" data-line="10"><span class="ln">10</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;&lt;button type="submit"&gt;Buscar&lt;/button&gt;</span></div>
+        <div class="line" data-line="11"><span class="ln">11</span><span class="code-text">&lt;/form&gt;</span></div>
+        <div class="line blank" data-line="12"><span class="ln">12</span><span class="code-text"></span></div>
+        <div class="line" data-line="13"><span class="ln">13</span><span class="code-text"><span class="tag">&lt;?php</span></span></div>
+        <div class="line" data-line="14"><span class="ln">14</span><span class="code-text"><span class="fn">while</span> (<span class="var">$fila</span> = <span class="fn">mysqli_fetch_assoc</span>(<span class="var">$resultado</span>)) {</span></div>
+        <div class="line" data-line="15"><span class="ln">15</span><span class="code-text">&nbsp;&nbsp;&nbsp;&nbsp;<span class="fn">echo</span> <span class="var">$fila</span>[<span class="str">"nombre"</span>] . <span class="str">" - "</span> . <span class="var">$fila</span>[<span class="str">"tipo"</span>] . <span class="str">" - "</span> . <span class="var">$fila</span>[<span class="str">"edad"</span>] . <span class="str">" años&lt;br&gt;"</span>;</span></div>
+        <div class="line" data-line="16"><span class="ln">16</span><span class="code-text">}</span></div>
+        <div class="line" data-line="17"><span class="ln">17</span><span class="code-text"><span class="tag">?&gt;</span></span></div>
+      </div>
+    </div>
+
+    <div class="walkthrough">
+      <section class="group">
+        <h2 class="group-label">Conexión y entrada del usuario</h2>
+        <div class="entries">
+          <article class="entry" data-line="1">
+            <div class="entry-head"><span class="line-badge">línea 1</span><code class="snippet">&lt;?php</code></div>
+            <p class="entry-text">Abre el bloque de código PHP. Todo lo que sigue, hasta el próximo <code>?&gt;</code>, se ejecuta en el servidor antes de enviarse al navegador.</p>
+          </article>
+          <article class="entry" data-line="2">
+            <div class="entry-head"><span class="line-badge">línea 2</span><code class="snippet">mysqli_connect(...)</code></div>
+            <p class="entry-text">Abre la conexión con el servidor MySQL: usuario <code>root</code>, contraseña <code>baycodec</code>, base de datos <code>escuela_mascotas</code>. El resultado se guarda en <code>$conexion</code> y se reutiliza en cada consulta de la página.</p>
+          </article>
+          <article class="entry" data-line="3">
+            <div class="entry-head"><span class="line-badge">línea 3</span><code class="snippet">$buscar = $_GET["buscar"] ?? "";</code></div>
+            <p class="entry-text">Lee el parámetro <code>buscar</code> de la URL (por ejemplo <code>?buscar=fir</code>). El operador <code>??</code> dice "si no existe, usa una cadena vacía" — evita un aviso de índice indefinido la primera vez que se abre la página, antes de escribir nada.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="group">
+        <h2 class="group-label">Preparar y ejecutar la consulta</h2>
+        <div class="entries">
+          <article class="entry" data-line="4">
+            <div class="entry-head"><span class="line-badge">línea 4</span><code class="snippet">mysqli_real_escape_string(...)</code></div>
+            <p class="entry-text">Neutraliza los caracteres especiales (como comillas) del texto que escribió el usuario, para que no puedan alterar la estructura de la consulta SQL. Es la defensa mínima contra inyección SQL.</p>
+          </article>
+          <article class="entry" data-line="5">
+            <div class="entry-head"><span class="line-badge">línea 5</span><code class="snippet">mysqli_query(... LIKE '%...%' ...)</code></div>
+            <p class="entry-text">Ejecuta la búsqueda: trae las filas de <code>mascotas</code> cuyo nombre contiene el texto buscado, en cualquier posición (los <code>%</code> son comodines). Si <code>$buscar_escapado</code> está vacío, <code>LIKE '%%'</code> coincide con todo — por eso se ven todas las mascotas cuando el campo está vacío.</p>
+          </article>
+          <article class="entry" data-line="6">
+            <div class="entry-head"><span class="line-badge">línea 6</span><code class="snippet">?&gt;</code></div>
+            <p class="entry-text">Cierra el bloque PHP para poder escribir HTML directamente, sin usar <code>echo</code>.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="group">
+        <h2 class="group-label">El formulario de búsqueda</h2>
+        <div class="entries">
+          <article class="entry" data-line="8">
+            <div class="entry-head"><span class="line-badge">línea 8</span><code class="snippet">&lt;form method="get"&gt;</code></div>
+            <p class="entry-text">El formulario envía sus datos por GET: el término buscado queda visible en la URL, así que la búsqueda se puede recargar o compartir sin perderse.</p>
+          </article>
+          <article class="entry" data-line="9">
+            <div class="entry-head"><span class="line-badge">línea 9</span><code class="snippet">&lt;input name="buscar"&gt;</code></div>
+            <p class="entry-text">El campo de texto. El atributo <code>name="buscar"</code> es la clave exacta con la que luego se lee <code>$_GET["buscar"]</code> — si el nombre no coincidiera, la búsqueda no llegaría a PHP.</p>
+          </article>
+          <article class="entry" data-line="10">
+            <div class="entry-head"><span class="line-badge">línea 10</span><code class="snippet">&lt;button type="submit"&gt;</code></div>
+            <p class="entry-text">Botón que envía el formulario al hacer clic, o al presionar Enter dentro del campo de texto.</p>
+          </article>
+          <article class="entry" data-line="11">
+            <div class="entry-head"><span class="line-badge">línea 11</span><code class="snippet">&lt;/form&gt;</code></div>
+            <p class="entry-text">Cierra el formulario.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="group">
+        <h2 class="group-label">Mostrar los resultados</h2>
+        <div class="entries">
+          <article class="entry" data-line="13">
+            <div class="entry-head"><span class="line-badge">línea 13</span><code class="snippet">&lt;?php</code></div>
+            <p class="entry-text">Vuelve al modo PHP para procesar y mostrar los resultados de la consulta.</p>
+          </article>
+          <article class="entry" data-line="14">
+            <div class="entry-head"><span class="line-badge">línea 14</span><code class="snippet">while ($fila = mysqli_fetch_assoc($resultado)) {</code></div>
+            <p class="entry-text">Recorre el resultado fila por fila. <code>mysqli_fetch_assoc()</code> devuelve un array asociativo con la fila actual, o <code>false</code> cuando ya no quedan más — y ahí el bucle se detiene.</p>
+          </article>
+          <article class="entry" data-line="15">
+            <div class="entry-head"><span class="line-badge">línea 15</span><code class="snippet">echo $fila["nombre"] . " - " . ...</code></div>
+            <p class="entry-text">Imprime cada mascota encontrada: nombre, tipo y edad, unidos con el operador de concatenación (<code>.</code>), seguidos de un salto de línea HTML (<code>&lt;br&gt;</code>).</p>
+          </article>
+          <article class="entry" data-line="16">
+            <div class="entry-head"><span class="line-badge">línea 16</span><code class="snippet">}</code></div>
+            <p class="entry-text">Cierra el bucle <code>while</code>.</p>
+          </article>
+          <article class="entry" data-line="17">
+            <div class="entry-head"><span class="line-badge">línea 17</span><code class="snippet">?&gt;</code></div>
+            <p class="entry-text">Cierra el bloque PHP final del archivo.</p>
+          </article>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div class="tip">
+    <span class="tip-label">Dato relacionado</span>
+    <p>PHP interpreta <code>?&gt;</code> como cierre real del código incluso dentro de un comentario de una sola línea (<code>//</code>). Escribirlo dentro de un comentario corta el script a la mitad — por eso conviene evitarlo incluso en texto explicativo.</p>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var lines = document.querySelectorAll('.line[data-line]');
+    var entries = document.querySelectorAll('.entry[data-line]');
+
+    function setActive(n, on) {
+      document.querySelectorAll('.line[data-line="' + n + '"], .entry[data-line="' + n + '"]')
+        .forEach(function (el) { el.classList.toggle('active', on); });
+    }
+
+    entries.forEach(function (entry) {
+      var n = entry.getAttribute('data-line');
+      entry.addEventListener('mouseenter', function () { setActive(n, true); });
+      entry.addEventListener('mouseleave', function () { setActive(n, false); });
+    });
+
+    lines.forEach(function (line) {
+      var n = line.getAttribute('data-line');
+      line.addEventListener('mouseenter', function () { setActive(n, true); });
+      line.addEventListener('mouseleave', function () { setActive(n, false); });
+    });
+  })();
+</script>
